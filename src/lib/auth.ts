@@ -34,7 +34,6 @@ export async function signIn(email: string, password: string) {
 export async function signUp(
   email: string,
   password: string,
-  role: 'student' | 'staff',
   displayName?: string
 ) {
   const cr = await createUserWithEmailAndPassword(
@@ -52,7 +51,7 @@ export async function signUp(
   await setDoc(doc(db, 'users', cr.user.uid), {
     id: cr.user.uid,
     email,
-    role,
+    role: 'student', // ALWAYS STUDENT
     fullName: displayName ?? '',
     createdAt: new Date().toISOString(),
   });
@@ -60,7 +59,7 @@ export async function signUp(
   return {
     uid: cr.user.uid,
     email: cr.user.email ?? '',
-    role,
+    role: 'student',
   };
 }
 

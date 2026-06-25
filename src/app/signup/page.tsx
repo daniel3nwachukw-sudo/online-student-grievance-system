@@ -11,7 +11,6 @@ export default function SignUpPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'student' | 'staff'>('student');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -23,17 +22,11 @@ export default function SignUpPage() {
 
     try {
       await signUp(
-        email,
-        password,
-        role,
-        fullName
-      );
-
-      if (role === 'staff') {
-        router.push('/signin');
-      } else {
-        router.push('/profile');
-      }
+  email,
+  password,
+  fullName
+);
+      router.push('/profile');
     } catch (error: any) {
       console.error('SIGNUP ERROR:', error);
 
@@ -46,9 +39,9 @@ export default function SignUpPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50">
-      <section className="w-full max-w-md rounded-lg bg-white p-6 shadow">
-        <h1 className="mb-6 text-2xl font-bold text-center">
+    <main className="min-h-screen flex items-center justify-center p-4">
+      <section className="w-full max-w-md rounded-lg border bg-white p-6 shadow">
+        <h1 className="mb-6 text-center text-2xl font-bold">
           Create Account
         </h1>
 
@@ -79,17 +72,6 @@ export default function SignUpPage() {
             className="border p-3 rounded"
             required
           />
-
-          <select
-            value={role}
-            onChange={(e) =>
-              setRole(e.target.value as 'student' | 'staff')
-            }
-            className="border p-3 rounded"
-          >
-            <option value="student">Student</option>
-            <option value="staff">Staff</option>
-          </select>
 
           {message && (
             <p className="text-red-600 text-sm">
