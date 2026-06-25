@@ -1,0 +1,36 @@
+{
+  "name": "online-student-grievance-system",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "export": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "emulate": "firebase emulators:start",
+    "emulate:export": "firebase emulators:export ./emulator-export",
+    "emulate:import": "firebase emulators:start --import=./emulator-export",
+    "deploy": "npm run build && firebase deploy --only hosting"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.19",
+    "clsx": "^2.1.1",
+    "firebase": "^11.9.0",
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^7.2.5",
+    "lucide-react": "^0.490.0",
+    "next": "14.2.5",
+    "postcss": "^8.4.40",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^1.14.0",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.1",
+    "@types/react": "^18.3.4",
+    "@types/react-dom": "^18.3.0"
+  }
+}

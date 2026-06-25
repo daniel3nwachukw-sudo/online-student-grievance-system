@@ -1,0 +1,44 @@
+# Query: handlesubmit
+# ContextLines: 1
+
+10 results - 5 files
+
+online-student-grievance-system\src\app\dashboard\student\new\page.tsx:
+   55  
+   56:   
+
+online-student-grievance-system\src\app\forgot-password\page.tsx:
+  11  
+  12:   async function handleSubmit(e: FormEvent) {
+  13      e.preventDefault();
+
+  30          <h1 className="page-heading">Reset password</h1>
+  31:         <form onSubmit={handleSubmit} className="grid gap-6">
+  32            <label className="grid gap-2">
+
+online-student-grievance-system\src\app\profile\page.tsx:
+   76  
+   77:   async function handleSubmit(event: FormEvent) {
+   78      event.preventDefault();
+
+  169  
+  170:         <form onSubmit={handleSubmit} className="grid gap-6">
+  171            <div className="grid gap-6 md:grid-cols-2">
+
+online-student-grievance-system\src\app\signin\page.tsx:
+  14  
+  15:   async function handleSubmit(event: FormEvent) {
+  16      event.preventDefault();
+
+  35  
+  36:         <form onSubmit={handleSubmit} className="grid gap-6">
+  37            <label className="grid gap-2">
+
+online-student-grievance-system\src\app\signup\page.tsx:
+  16  
+  17:   async function handleSubmit(event: FormEvent) {
+  18      event.preventDefault();
+
+  50          <h1 className="page-heading">Create Student Account</h1>
+  51:         <form onSubmit={handleSubmit} className="grid gap-6">
+  52            <label className="grid gap-2">
