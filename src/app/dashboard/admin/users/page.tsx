@@ -1,24 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-
-import {
-  auth,
-  db,
-} from '@/src/lib/firebase';
-
+import { useEffect, useState } from 'react';
 import {
   collection,
-  doc,
-  getDoc,
   onSnapshot,
+  query,
+  orderBy,
+  doc,
+  updateDoc,
 } from 'firebase/firestore';
 
-import {
-  updateUserRole,
-} from '@/src/lib/auth';
+import { db } from '@/src/lib/firebase';
 
 type UserData = {
   id: string;
@@ -26,318 +18,225 @@ type UserData = {
   email: string;
   department?: string;
   level?: string;
-  matricNumber?: string;
-  phoneNumber?: string;
-  gender?: string;
-  college?: string;
-  profileImage?: string;
-  role: 'student' | 'staff' | 'admin';
+  role: string;
 };
 
-export default function AdminUsersPage() {
-  const router = useRouter();
-
-  const [loading, setLoading] = useState(true);
-
+export default function UsersPage() {
   const [users, setUsers] = useState<UserData[]>([]);
-
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  // MODAL STATE
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [newRole, setNewRole] = useState<string>('');
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(
-      auth,
-      async (user) => {
-        if (!user) {
-          router.push('/signin');
-          return;
-        }
+    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
 
-        const adminSnap = await getDoc(
-          doc(db, 'users', user.uid)
-        );
+    const unsub = onSnapshot(q, (snap) => {
+      const list: UserData[] = [];
 
-        if (!adminSnap.exists()) {
-          router.push('/signin');
-          return;
-        }
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
 
-        if (adminSnap.data().role !== 'admin') {
-          router.push('/dashboard/student');
-          return;
-        }
+        list.push({
+          id: docSnap.id,
+          fullName: data.fullName ?? '',
+          email: data.email ?? '',
+          department: data.department ?? '',
+          level: data.level ?? '',
+          role: data.role ?? 'student',
+        });
+      });
 
-        const unsubUsers = onSnapshot(
-          collection(db, 'users'),
-          (snapshot) => {
-            const list: UserData[] = [];
-
-            snapshot.forEach((docSnap) => {
-              const data = docSnap.data();
-
-              list.push({
-                id: docSnap.id,
-                fullName: data.fullName || '',
-                email: data.email || '',
-                department: data.department || '',
-                level: data.level || '',
-                matricNumber: data.matricNumber || '',
-                phoneNumber: data.phoneNumber || '',
-                gender: data.gender || '',
-                college: data.college || '',
-                profileImage: data.profileImage || '',
-                role: data.role || 'student',
-              });
-            });
-
-            setUsers(list);
-            setLoading(false);
-          }
-        );
-
-        return unsubUsers;
-      }
-    );
-
-    return () => unsubAuth();
-  }, [router]);
-
-  async function makeStudent(id: string) {
-    await updateUserRole(id, 'student');
-  }
-
-  async function makeStaff(id: string) {
-    await updateUserRole(id, 'staff');
-  }
-
-  async function makeAdmin(id: string) {
-    await updateUserRole(id, 'admin');
-  }
-
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const q = search.toLowerCase();
-
-      return (
-        user.fullName.toLowerCase().includes(q) ||
-        user.email.toLowerCase().includes(q) ||
-        user.department?.toLowerCase().includes(q) ||
-        user.level?.toLowerCase().includes(q)
-      );
+      setUsers(list);
     });
-  }, [users, search]);
 
-  const totalUsers = users.length;
+    return () => unsub();
+  }, []);
 
-  const totalStudents = users.filter(
-    (u) => u.role === 'student'
-  ).length;
+  // OPEN CONFIRMATION MODAL
+  const askChangeRole = (user: UserData, role: string) => {
+    setSelectedUser(user);
+    setNewRole(role);
+    setModalOpen(true);
+    setOpenMenu(null);
+  };
 
-  const totalStaff = users.filter(
-    (u) => u.role === 'staff'
-  ).length;
+  // CONFIRM ROLE CHANGE
+  const confirmChangeRole = async () => {
+    if (!selectedUser) return;
 
-  const totalAdmins = users.filter(
-    (u) => u.role === 'admin'
-  ).length;
+    try {
+      await updateDoc(doc(db, 'users', selectedUser.id), {
+        role: newRole,
+      });
 
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <h1 className="text-2xl font-bold">
-          Loading users...
-        </h1>
-      </main>
-    );
-  }
+      // 🔥 instant UI update (no refresh needed)
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === selectedUser.id ? { ...u, role: newRole } : u
+        )
+      );
+
+      setModalOpen(false);
+      setSelectedUser(null);
+    } catch (err) {
+      console.error('Role update failed:', err);
+    }
+  };
+
+  const filteredUsers = users.filter((u) => {
+    const matchSearch =
+      u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase());
+
+    const matchFilter = filter === 'all' || u.role === filter;
+
+    return matchSearch && matchFilter;
+  });
 
   return (
-    <main className="p-8">
+    <main className="p-6 relative">
 
-      <h1 className="text-3xl font-bold mb-8">
-        User Management
-      </h1>
-      {/* Statistics */}
+      {/* HEADER */}
+      <h1 className="text-2xl font-bold mb-6">User Management</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-
-        <div className="bg-white border rounded-xl p-6 shadow">
-          <p className="text-gray-500">Total Users</p>
-          <h2 className="text-3xl font-bold mt-2">
-            {totalUsers}
-          </h2>
-        </div>
-
-        <div className="bg-blue-50 border rounded-xl p-6 shadow">
-          <p className="text-blue-700">Students</p>
-          <h2 className="text-3xl font-bold mt-2">
-            {totalStudents}
-          </h2>
-        </div>
-
-        <div className="bg-yellow-50 border rounded-xl p-6 shadow">
-          <p className="text-yellow-700">Staff</p>
-          <h2 className="text-3xl font-bold mt-2">
-            {totalStaff}
-          </h2>
-        </div>
-
-        <div className="bg-green-50 border rounded-xl p-6 shadow">
-          <p className="text-green-700">Admins</p>
-          <h2 className="text-3xl font-bold mt-2">
-            {totalAdmins}
-          </h2>
-        </div>
-
-      </div>
-
-      {/* Search */}
-
-      <div className="mb-6">
+      {/* SEARCH + FILTER */}
+      <div className="flex gap-3 mb-6">
         <input
-          type="text"
-          placeholder="Search by name, email, department or level..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full border rounded-lg p-3"
+          placeholder="Search users..."
+          className="border p-3 rounded w-full"
         />
+
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="border p-3 rounded"
+        >
+          <option value="all">All</option>
+          <option value="student">Student</option>
+          <option value="staff">Staff</option>
+          <option value="admin">Admin</option>
+        </select>
       </div>
 
-      {/* Users Table */}
+      {/* USERS */}
+      <div className="space-y-3">
+        {filteredUsers.map((user) => (
+          <div
+            key={user.id}
+            className="border rounded-xl p-4 flex justify-between items-center"
+          >
 
-      <div className="overflow-x-auto rounded-xl border shadow">
+            {/* USER INFO */}
+            <div>
+              <h2 className="font-semibold">{user.fullName}</h2>
+              <p className="text-sm text-gray-500">{user.email}</p>
+              <p className="text-sm text-gray-500">
+                {user.department} • {user.level}
+              </p>
+            </div>
 
-        <table className="w-full">
+            {/* ROLE */}
+            <span
+              className={`px-3 py-1 rounded-full text-sm ${
+                user.role === 'admin'
+                  ? 'bg-red-100 text-red-700'
+                  : user.role === 'staff'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}
+            >
+              {user.role}
+            </span>
 
-          <thead className="bg-gray-100">
+            {/* 3 DOT MENU */}
+            <div className="relative">
 
-            <tr>
+              <button
+                onClick={() =>
+                  setOpenMenu(openMenu === user.id ? null : user.id)
+                }
+                className="p-2"
+              >
+                {/* 3-dot icon */}
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                </svg>
+              </button>
 
-              <th className="text-left p-4">
-                Name
-              </th>
+              {openMenu === user.id && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border rounded shadow z-10">
+                  <button
+                    onClick={() => askChangeRole(user, 'student')}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Make Student
+                  </button>
 
-              <th className="text-left p-4">
-                Email
-              </th>
+                  <button
+                    onClick={() => askChangeRole(user, 'staff')}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Make Staff
+                  </button>
 
-              <th className="text-left p-4">
-                Department
-              </th>
+                  <button
+                    onClick={() => askChangeRole(user, 'admin')}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Make Admin
+                  </button>
+                </div>
+              )}
 
-              <th className="text-left p-4">
-                Level
-              </th>
-
-              <th className="text-left p-4">
-                Role
-              </th>
-
-              <th className="text-left p-4">
-                Actions
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {filteredUsers.length === 0 ? (
-
-              <tr>
-
-                <td
-                  colSpan={6}
-                  className="text-center p-8 text-gray-500"
-                >
-                  No users found.
-                </td>
-
-              </tr>
-
-            ) : (
-
-              filteredUsers.map((user) => (
-
-                <tr
-                  key={user.id}
-                  className="border-t"
-                >
-
-                  <td className="p-4 font-medium">
-                    {user.fullName}
-                  </td>
-
-                  <td className="p-4">
-                    {user.email}
-                  </td>
-
-                  <td className="p-4">
-                    {user.department}
-                  </td>
-
-                  <td className="p-4">
-                    {user.level}
-                  </td>
-
-                  <td className="p-4">
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        user.role === 'admin'
-                          ? 'bg-red-100 text-red-700'
-                          : user.role === 'staff'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-
-                  </td>
-
-                 <td className="p-4">
-
-  <div className="flex flex-wrap gap-2">
-
-    <button
-      onClick={() => makeStudent(user.id)}
-      disabled={user.role === 'student'}
-      className="bg-blue-600 text-white px-3 py-1 rounded disabled:opacity-50"
-    >
-      Make Student
-    </button>
-
-    <button
-      onClick={() => makeStaff(user.id)}
-      disabled={user.role === 'staff'}
-      className="bg-yellow-500 text-white px-3 py-1 rounded disabled:opacity-50"
-    >
-      Make Staff
-    </button>
-
-    <button
-      onClick={() => makeAdmin(user.id)}
-      disabled={user.role === 'admin'}
-      className="bg-red-600 text-white px-3 py-1 rounded disabled:opacity-50"
-    >
-      Make Admin
-    </button>
-
-  </div>
-
-</td>
-                </tr>
-
-              ))
-
-            )}
-
-          </tbody>
-
-        </table>
-
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* ================= MODAL ================= */}
+      {modalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+
+          <div className="bg-white p-6 rounded-xl w-[320px]">
+
+            <h2 className="text-lg font-semibold mb-3">
+              Confirm Role Change
+            </h2>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Change <b>{selectedUser.fullName}</b> to <b>{newRole}</b>?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmChangeRole}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Confirm
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </main>
   );

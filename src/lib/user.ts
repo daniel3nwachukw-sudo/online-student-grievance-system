@@ -25,11 +25,7 @@ export async function loadUserProfile(
   userId: string
 ): Promise<UserProfile | null> {
   const userDoc = await getDoc(doc(db, 'users', userId));
-
-  if (!userDoc.exists()) {
-    return null;
-  }
-
+  if (!userDoc.exists()) return null;
   return userDoc.data() as UserProfile;
 }
 
@@ -44,9 +40,7 @@ export async function saveUserProfile(
   await setDoc(
     profileRef,
     profile as DocumentData,
-    {
-      merge: true,
-    }
+    { merge: true }
   );
 }
 
@@ -57,15 +51,9 @@ export async function uploadProfileImage(
   userId: string,
   file: File
 ): Promise<string> {
-  const imageRef = ref(
-    storage,
-    `profileImages/${userId}`
-  );
+  const imageRef = ref(storage, `profileImages/${userId}`);
 
-  const uploadResult = await uploadBytes(
-    imageRef,
-    file
-  );
+  const uploadResult = await uploadBytes(imageRef, file);
 
   return getDownloadURL(uploadResult.ref);
 }
@@ -105,11 +93,7 @@ export async function updateComplaintStatus(
   status: 'Pending' | 'In Progress' | 'Resolved',
   userId?: string
 ): Promise<void> {
-  const complaintRef = doc(
-    db,
-    'complaints',
-    complaintId
-  );
+  const complaintRef = doc(db, 'complaints', complaintId);
 
   await updateDoc(complaintRef, {
     status,
@@ -117,16 +101,13 @@ export async function updateComplaintStatus(
   });
 
   if (userId) {
-    await addDoc(
-      collection(db, 'notifications'),
-      {
-        userId,
-        complaintId,
-        message: `Your complaint status has been updated to ${status}`,
-        read: false,
-        createdAt: new Date(),
-      }
-    );
+    await addDoc(collection(db, 'notifications'), {
+      userId,
+      complaintId,
+      message: `Your complaint status has been updated to ${status}`,
+      read: false,
+      createdAt: new Date(),
+    });
   }
 }
 
@@ -136,7 +117,26 @@ export async function updateComplaintStatus(
 export async function deleteComplaint(
   complaintId: string
 ): Promise<void> {
-  await deleteDoc(
-    doc(db, 'complaints', complaintId)
-  );
+  await deleteDoc(doc(db, 'complaints', complaintId));
+}
+
+// ===============================
+// ROLE MANAGEMENT (FIX FOR YOUR ERROR)
+// ===============================
+export async function promoteToStaff(userId: string): Promise<void> {
+  await updateDoc(doc(db, 'users', userId), {
+    role: 'staff',
+  });
+}
+
+export async function promoteToAdmin(userId: string): Promise<void> {
+  await updateDoc(doc(db, 'users', userId), {
+    role: 'admin',
+  });
+}
+
+export async function demoteToStudent(userId: string): Promise<void> {
+  await updateDoc(doc(db, 'users', userId), {
+    role: 'student',
+  });
 }

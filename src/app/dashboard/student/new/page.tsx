@@ -107,14 +107,13 @@ async function handleSubmit(e: FormEvent) {
     });
 
     router.push('/dashboard/student');
-  } catch (error) {
-    setMessage(
-      'Failed to submit complaint. Please try again.'
-    );
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
+ } catch (error: any) {
+  console.error('SUBMIT ERROR:', error);
+
+  setMessage(
+    error?.message || 'Failed to submit complaint.'
+  );
+}
 }
   return (
     <main className="container">
