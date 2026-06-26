@@ -126,21 +126,27 @@ export default function StudentDashboardPage() {
   }
 
   return (
-    <main className="p-8">
+  <main className="p-6">
 
-      {/* Header */}
+    {/* HEADER */}
+    <div className="flex justify-between items-start mb-8">
 
-      <div className="mb-8">
+      {/* LEFT SIDE */}
+      <div>
         <h1 className="text-4xl font-bold">
           Welcome, {studentName}
         </h1>
 
         <p className="text-gray-500 mt-2">
           Student Grievance Dashboard
-        </p><div className="flex justify-end mb-4">
-  <LogoutButton />
-</div>
+        </p>
       </div>
+
+      {/* RIGHT SIDE */}
+      <LogoutButton />
+
+    </div>
+
 
       {/* Quick Actions */}
 

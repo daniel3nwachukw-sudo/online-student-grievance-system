@@ -154,26 +154,30 @@ export default function AdminDashboardPage() {
 
     return () => unsubscribe();
   }, [router]);
-
-  if (loading) {
-    return (
-      <main className="max-w-7xl mx-auto p-8">
-        <h2 className="text-xl font-semibold">
-          Loading Admin Dashboard...
-        </h2>
-      </main>
-    );
-  }
-<div className="flex justify-end mb-4">
-  <LogoutButton />
-</div>
+if (loading) {
   return (
     <main className="max-w-7xl mx-auto p-8">
+      <h2 className="text-xl font-semibold">
+        Loading Admin Dashboard...
+      </h2>
+    </main>
+  );
+}
 
-      <h1 className="text-4xl font-bold mb-2">
+return (
+  <main className="max-w-7xl mx-auto p-8">
+
+    {/* HEADER */}
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-2xl font-bold">
         Admin Dashboard
       </h1>
 
+      <LogoutButton />
+    </div>
+
+    {/* REST OF DASHBOARD CONTENT */}
+  
       <p className="text-gray-600 mb-8">
         Manage users, staff, complaints and system settings.
       </p>      {/* USER STATISTICS */}

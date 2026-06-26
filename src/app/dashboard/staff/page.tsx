@@ -2,24 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
 import {
   collection,
   query,
   onSnapshot,
   orderBy,
   limit,
-  doc,
-  getDoc,
 } from 'firebase/firestore';
-import LogoutButton from '@/src/components/LogoutButton';
-import { auth, db } from '@/src/lib/firebase';
+
+import { db } from '@/src/lib/firebase';
 
 import {
   updateComplaintStatus,
   deleteComplaint,
 } from '@/src/lib/user';
+import LogoutButton from '@/src/components/LogoutButton';
 
 type Complaint = {
   id: string;
@@ -30,10 +27,7 @@ type Complaint = {
   createdAt?: any;
 };
 
-export default function StaffDashboardPage() {
-  const router = useRouter();
-
-  const [loading, setLoading] = useState(true);
+export default function AdminDashboardPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [total, setTotal] = useState(0);
   const [pending, setPending] = useState(0);
@@ -41,131 +35,112 @@ export default function StaffDashboardPage() {
   const [resolved, setResolved] = useState(0);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push('/signin');
-        return;
-      }
+    const q = query(
+      collection(db, 'complaints'),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
 
-      const userSnap = await getDoc(doc(db, 'users', user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list: Complaint[] = [];
 
-      if (!userSnap.exists()) {
-        router.push('/signin');
-        return;
-      }
+      let p = 0;
+      let ip = 0;
+      let r = 0;
 
-      const role = userSnap.data()?.role;
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
 
-      if (role === 'student') {
-        router.push('/dashboard/student');
-        return;
-      }
+        const complaint: Complaint = {
+          id: docSnap.id,
+          title: data.title ?? '',
+          description: data.description ?? '',
+          status: data.status ?? 'Pending',
+          reporterId: data.reporterId ?? '',
+          createdAt: data.createdAt,
+        };
 
-      if (role === 'admin') {
-        router.push('/dashboard/admin');
-        return;
-      }
+        list.push(complaint);
 
-      if (role !== 'staff') {
-        router.push('/signin');
-        return;
-      }
+        const status = complaint.status.toLowerCase();
 
-      setLoading(false);
-
-      const q = query(
-        collection(db, 'complaints'),
-        orderBy('createdAt', 'desc'),
-        limit(5)
-      );
-
-      const unsubscribeComplaints = onSnapshot(q, (snapshot) => {
-        const list: Complaint[] = [];
-
-        let p = 0;
-        let ip = 0;
-        let r = 0;
-
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-
-          const complaint: Complaint = {
-            id: docSnap.id,
-            title: data.title ?? '',
-            description: data.description ?? '',
-            status: data.status ?? 'Pending',
-            reporterId: data.reporterId ?? '',
-            createdAt: data.createdAt,
-          };
-
-          list.push(complaint);
-
-          const status = complaint.status.toLowerCase();
-
-          if (status === 'pending') p++;
-          else if (status === 'in progress') ip++;
-          else if (status === 'resolved') r++;
-        });
-
-        setComplaints(list);
-        setTotal(snapshot.size);
-        setPending(p);
-        setInProgress(ip);
-        setResolved(r);
+        if (status === 'pending') p++;
+        else if (status === 'in progress') ip++;
+        else if (status === 'resolved') r++;
       });
 
-      return unsubscribeComplaints;
+      setComplaints(list);
+      setTotal(snapshot.size);
+      setPending(p);
+      setInProgress(ip);
+      setResolved(r);
     });
 
-    return () => unsubscribeAuth();
-  }, [router]);
-
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="text-lg">Loading staff dashboard...</p>
-      </main>
-    );
-  }
+    return () => unsub();
+  }, []);
 
   return (
-    <main className="p-8">
-      <h1 className="text-3xl font-bold mb-6">
+  <main className="p-6">
+
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-3xl font-bold">
         Staff Dashboard
       </h1>
-<div className="flex justify-end mb-4">
-  <LogoutButton />
-</div>
+
+      <LogoutButton />
+    </div>
+
+      {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+
         <div className="border rounded-lg p-4 shadow">
-          <h2 className="text-gray-500">Total Complaints</h2>
-          <p className="text-3xl font-bold">{total}</p>
+          <h2 className="text-gray-500">
+            Total Complaints
+          </h2>
+          <p className="text-3xl font-bold">
+            {total}
+          </p>
         </div>
 
         <div className="border rounded-lg p-4 shadow">
-          <h2 className="text-gray-500">Pending</h2>
-          <p className="text-3xl font-bold">{pending}</p>
+          <h2 className="text-gray-500">
+            Pending
+          </h2>
+          <p className="text-3xl font-bold">
+            {pending}
+          </p>
         </div>
 
         <div className="border rounded-lg p-4 shadow">
-          <h2 className="text-gray-500">In Progress</h2>
-          <p className="text-3xl font-bold">{inProgress}</p>
+          <h2 className="text-gray-500">
+            In Progress
+          </h2>
+          <p className="text-3xl font-bold">
+            {inProgress}
+          </p>
         </div>
 
         <div className="border rounded-lg p-4 shadow">
-          <h2 className="text-gray-500">Resolved</h2>
-          <p className="text-3xl font-bold">{resolved}</p>
+          <h2 className="text-gray-500">
+            Resolved
+          </h2>
+          <p className="text-3xl font-bold">
+            {resolved}
+          </p>
         </div>
+
       </div>
 
+      {/* LATEST COMPLAINTS */}
       <div className="border rounded-lg p-6 shadow mb-6">
+
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
             Latest 5 Complaints
           </h2>
 
           <Link
-            href="/dashboard/staff/reports"
+            href="/dashboard/admin/reports"
             className="bg-blue-600 text-white px-4 py-2 rounded"
           >
             View All Reports
@@ -178,7 +153,9 @@ export default function StaffDashboardPage() {
           </p>
         ) : (
           <div className="space-y-4">
+
             {complaints.map((c) => {
+
               const status = c.status.toLowerCase();
 
               return (
@@ -211,6 +188,7 @@ export default function StaffDashboardPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-4">
+
                     <Link
                       href={`/complaint/${c.id}`}
                       className="bg-gray-700 text-white px-3 py-1 rounded"
@@ -245,19 +223,24 @@ export default function StaffDashboardPage() {
                     </button>
 
                     <button
-                      onClick={() => deleteComplaint(c.id)}
+                      onClick={() =>
+                        deleteComplaint(c.id)
+                      }
                       className="bg-red-600 text-white px-3 py-1 rounded"
                     >
                       Delete
                     </button>
+
                   </div>
                 </div>
               );
             })}
+
           </div>
         )}
       </div>
 
+      {/* NOTIFICATIONS */}
       <div className="border rounded-lg p-6 shadow mb-6">
         <h2 className="text-xl font-semibold mb-4">
           Notifications
@@ -268,14 +251,17 @@ export default function StaffDashboardPage() {
         </p>
       </div>
 
+      {/* QUICK ACTIONS */}
       <div className="border rounded-lg p-6 shadow">
+
         <h2 className="text-xl font-semibold mb-4">
           Quick Actions
         </h2>
 
         <div className="flex gap-4">
+
           <Link
-            href="/dashboard/staff/reports"
+            href="/dashboard/admin/reports"
             className="bg-blue-600 text-white px-4 py-2 rounded"
           >
             Complaint Management
@@ -287,8 +273,11 @@ export default function StaffDashboardPage() {
           >
             Notifications
           </Link>
+
         </div>
+
       </div>
+
     </main>
   );
 }

@@ -1,5 +1,5 @@
 'use client';
-
+import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { checkModeration } from '@/src/lib/moderation';
@@ -14,7 +14,10 @@ const levels = ['100 Level', '200 Level', '300 Level', '400 Level', '500 Level']
 const semesters = ['First Semester', 'Second Semester'];
 
 export default function NewComplaintPage() {
+
+ const { profile } = useUserProfile();
   const router = useRouter();
+
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
@@ -28,12 +31,17 @@ export default function NewComplaintPage() {
   const [issueLevel, setIssueLevel] = useState('100 Level');
   const [message, setMessage] = useState<string | null>(null);
   const [severity, setSeverity] = useState<string | null>(null);
+useEffect(() => {
+  const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+  return unsub;
+}, []);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return unsub;
-  }, []);
-
+useEffect(() => {
+  if (profile) {
+    setDepartment(profile.department || '');
+    setIssueLevel(profile.level || '');
+  }
+}, [profile]);
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     setMessage(null);
     const list = e.target.files;
