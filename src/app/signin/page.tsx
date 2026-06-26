@@ -17,6 +17,7 @@ export default function SignInPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
     setLoading(true);
     setMessage(null);
 
@@ -34,15 +35,26 @@ export default function SignInPage() {
 
       const role = snap.data()?.role;
 
-      if (role === 'staff') {
+      console.log('USER ROLE:', role);
+
+      if (role === 'admin') {
         router.push('/dashboard/admin');
-      } else if (role === 'student') {
-        router.push('/dashboard/student');
-      } else {
-        setMessage('Invalid user role.');
+        return;
       }
+
+      if (role === 'staff') {
+        router.push('/dashboard/staff');
+        return;
+      }
+
+      if (role === 'student') {
+        router.push('/dashboard/student');
+        return;
+      }
+
+      setMessage('Invalid user role.');
     } catch (error) {
-      console.error(error);
+      console.error('LOGIN ERROR:', error);
       setMessage('Login failed. Check email or password.');
     } finally {
       setLoading(false);
@@ -50,12 +62,12 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50">
+    <main className="min-h-screen flex items-center justify-center bg-gray-100">
       <form
         onSubmit={handleSubmit}
-        className="w-[350px] bg-white p-6 rounded-xl shadow-md flex flex-col gap-4"
+        className="bg-white p-8 rounded-xl shadow-md w-full max-w-md space-y-4"
       >
-        <h1 className="text-2xl font-bold text-center">
+        <h1 className="text-3xl font-bold text-center">
           Sign In
         </h1>
 
@@ -64,7 +76,7 @@ export default function SignInPage() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="border p-3 rounded"
+          className="border p-3 rounded w-full"
           required
         />
 
@@ -73,7 +85,7 @@ export default function SignInPage() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border p-3 rounded"
+          className="border p-3 rounded w-full"
           required
         />
 
@@ -86,7 +98,7 @@ export default function SignInPage() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 text-white p-3 rounded disabled:opacity-50"
+          className="bg-blue-600 text-white p-3 rounded w-full disabled:opacity-50"
         >
           {loading ? 'Signing In...' : 'Sign In'}
         </button>

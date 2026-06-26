@@ -25,6 +25,7 @@ type Complaint = {
 export default function StudentDashboardPage() {
   const router = useRouter();
 
+  const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('Student');
 
   const [complaints, setComplaints] = useState<Complaint[]>([]);
@@ -33,7 +34,7 @@ export default function StudentDashboardPage() {
   const [pending, setPending] = useState(0);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         router.push('/signin');
         return;
@@ -42,42 +43,62 @@ export default function StudentDashboardPage() {
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
 
-      if (userSnap.exists()) {
-        setStudentName(
-          userSnap.data().fullName ||
-          user.displayName ||
-          'Student'
-        );
+      if (!userSnap.exists()) {
+        router.push('/signin');
+        return;
       }
+
+      const data = userSnap.data();
+      const role = data.role;
+
+      // Protect dashboard by role
+      if (role === 'staff') {
+        router.push('/dashboard/staff');
+        return;
+      }
+
+      if (role === 'admin') {
+        router.push('/dashboard/admin');
+        return;
+      }
+
+      if (role !== 'student') {
+        router.push('/signin');
+        return;
+      }
+
+      setStudentName(
+        data.fullName ||
+        user.displayName ||
+        'Student'
+      );
+
+      setLoading(false);
 
       const q = query(
         collection(db, 'complaints'),
         where('reporterId', '==', user.uid)
       );
 
-      onSnapshot(q, (snapshot) => {
+      const unsubscribeComplaints = onSnapshot(q, (snapshot) => {
         const list: Complaint[] = [];
 
         let resolvedCount = 0;
         let pendingCount = 0;
 
         snapshot.forEach((d) => {
-          const data = d.data();
+          const complaint = d.data();
 
-          const status =
-            data.status || 'Pending';
+          const status = complaint.status || 'Pending';
 
           list.push({
             id: d.id,
-            title: data.title || '',
-            description: data.description || '',
+            title: complaint.title || '',
+            description: complaint.description || '',
             status,
           });
 
-          if (
-            status.toLowerCase() ===
-            'resolved'
-          ) {
+          if (status.toLowerCase() === 'resolved') {
             resolvedCount++;
           } else {
             pendingCount++;
@@ -89,13 +110,23 @@ export default function StudentDashboardPage() {
         setResolved(resolvedCount);
         setPending(pendingCount);
       });
+
+      return unsubscribeComplaints;
     });
 
-    return () => unsub();
+    return () => unsubscribeAuth();
   }, [router]);
 
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-lg">Loading dashboard...</p>
+      </main>
+    );
+  }
+
   return (
-    <main className="p-6">
+    <main className="p-8">
 
       {/* Header */}
 
@@ -193,8 +224,7 @@ export default function StudentDashboardPage() {
 
                   <span
                     className={`px-3 py-1 rounded-full text-sm ${
-                      c.status.toLowerCase() ===
-                      'resolved'
+                      c.status.toLowerCase() === 'resolved'
                         ? 'bg-green-100 text-green-700'
                         : 'bg-yellow-100 text-yellow-700'
                     }`}
@@ -214,6 +244,7 @@ export default function StudentDashboardPage() {
                 >
                   View Details →
                 </Link>
+
               </div>
             ))}
 
