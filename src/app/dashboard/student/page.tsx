@@ -1,5 +1,6 @@
 'use client';
-
+import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
+import StudentSidebar from '@/src/components/dashboard/StudentSidebar';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,7 +13,7 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore';
-import LogoutButton from '@/src/components/LogoutButton';
+
 import { auth, db } from '@/src/lib/firebase';
 
 type Complaint = {
@@ -125,13 +126,15 @@ export default function StudentDashboardPage() {
     );
   }
 
-  return (
-  <main className="p-6">
+ return (
+  <DashboardLayout
+    title="Student Dashboard"
+    sidebar={<StudentSidebar />}
+  >
 
     {/* HEADER */}
     <div className="flex justify-between items-start mb-8">
 
-      {/* LEFT SIDE */}
       <div>
         <h1 className="text-4xl font-bold">
           Welcome, {studentName}
@@ -142,125 +145,109 @@ export default function StudentDashboardPage() {
         </p>
       </div>
 
-      {/* RIGHT SIDE */}
-      <LogoutButton />
+    </div>
+
+    {/* Quick Actions */}
+    <div className="flex gap-4 mb-8">
+
+      <Link
+        href="/dashboard/student/new"
+        className="bg-blue-600 text-white px-5 py-3 rounded-xl"
+      >
+        Lodge Complaint
+      </Link>
+
+      <Link
+        href="/complaint"
+        className="bg-green-600 text-white px-5 py-3 rounded-xl"
+      >
+        Track Complaint
+      </Link>
 
     </div>
 
-
-      {/* Quick Actions */}
-
-      <div className="flex gap-4 mb-8">
-
-        <Link
-          href="/dashboard/student/new"
-          className="bg-blue-600 text-white px-5 py-3 rounded-xl"
-        >
-          Lodge Complaint
-        </Link>
-
-        <Link
-          href="/complaint"
-          className="bg-green-600 text-white px-5 py-3 rounded-xl"
-        >
-          Track Complaint
-        </Link>
-
-      </div>
-
-      {/* Statistics */}
-
-      <div className="grid md:grid-cols-3 gap-6 mb-10">
-
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
-          <p className="text-gray-500">
-            Total Complaints
-          </p>
-
-          <h2 className="text-3xl font-bold mt-2">
-            {total}
-          </h2>
-        </div>
-
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
-          <p className="text-green-700">
-            Resolved
-          </p>
-
-          <h2 className="text-3xl font-bold text-green-700 mt-2">
-            {resolved}
-          </h2>
-        </div>
-
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 shadow-sm">
-          <p className="text-yellow-700">
-            Pending
-          </p>
-
-          <h2 className="text-3xl font-bold text-yellow-700 mt-2">
-            {pending}
-          </h2>
-        </div>
-
-      </div>
-
-      {/* Recent Complaints */}
+    {/* Statistics */}
+    <div className="grid md:grid-cols-3 gap-6 mb-10">
 
       <div className="bg-white border rounded-2xl p-6 shadow-sm">
-
-        <h2 className="text-xl font-bold mb-4">
-          Recent Complaints
+        <p className="text-gray-500">Total Complaints</p>
+        <h2 className="text-3xl font-bold mt-2">
+          {total}
         </h2>
-
-        {complaints.length === 0 ? (
-          <p className="text-gray-500">
-            No complaints submitted yet.
-          </p>
-        ) : (
-          <div className="space-y-4">
-
-            {complaints.map((c) => (
-              <div
-                key={c.id}
-                className="border rounded-xl p-4"
-              >
-                <div className="flex justify-between items-center">
-
-                  <h3 className="font-semibold">
-                    {c.title}
-                  </h3>
-
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      c.status.toLowerCase() === 'resolved'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}
-                  >
-                    {c.status}
-                  </span>
-
-                </div>
-
-                <p className="text-gray-600 mt-2">
-                  {c.description}
-                </p>
-
-                <Link
-                  href={`/complaint/${c.id}`}
-                  className="text-blue-600 text-sm mt-3 inline-block"
-                >
-                  View Details →
-                </Link>
-
-              </div>
-            ))}
-
-          </div>
-        )}
-
       </div>
 
-    </main>
-  );
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
+        <p className="text-green-700">Resolved</p>
+        <h2 className="text-3xl font-bold text-green-700 mt-2">
+          {resolved}
+        </h2>
+      </div>
+
+      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <p className="text-yellow-700">Pending</p>
+        <h2 className="text-3xl font-bold text-yellow-700 mt-2">
+          {pending}
+        </h2>
+      </div>
+
+    </div>
+
+    {/* Recent Complaints */}
+    <div className="bg-white border rounded-2xl p-6 shadow-sm">
+
+      <h2 className="text-xl font-bold mb-4">
+        Recent Complaints
+      </h2>
+
+      {complaints.length === 0 ? (
+        <p className="text-gray-500">
+          No complaints submitted yet.
+        </p>
+      ) : (
+        <div className="space-y-4">
+
+          {complaints.map((c) => (
+            <div
+              key={c.id}
+              className="border rounded-xl p-4"
+            >
+              <div className="flex justify-between items-center">
+
+                <h3 className="font-semibold">
+                  {c.title}
+                </h3>
+
+                <span
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    c.status.toLowerCase() === 'resolved'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}
+                >
+                  {c.status}
+                </span>
+
+              </div>
+
+              <p className="text-gray-600 mt-2">
+                {c.description}
+              </p>
+
+              <Link
+                href={`/complaint/${c.id}`}
+                className="text-blue-600 text-sm mt-3 inline-block"
+              >
+                View Details →
+              </Link>
+
+            </div>
+          ))}
+
+        </div>
+      )}
+
+    </div>
+
+  </DashboardLayout>
+);
 }

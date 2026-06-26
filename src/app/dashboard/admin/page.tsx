@@ -1,11 +1,12 @@
 'use client';
-
+import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
+import AdminSidebar from '@/src/components/dashboard/AdminSidebar';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/src/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import LogoutButton from '@/src/components/LogoutButton';
+
 import {
   collection,
   query,
@@ -165,16 +166,18 @@ if (loading) {
 }
 
 return (
-  <main className="max-w-7xl mx-auto p-8">
+  <DashboardLayout
+  title="Admin Dashboard"
+  sidebar={<AdminSidebar />}
+>
+    <main className="max-w-7xl mx-auto p-8">
 
-    {/* HEADER */}
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-2xl font-bold">
-        Admin Dashboard
-      </h1>
-
-      <LogoutButton />
-    </div>
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">
+          
+        </h1>
+      </div>
 
     {/* REST OF DASHBOARD CONTENT */}
   
@@ -395,5 +398,6 @@ return (
       </div>
 
     </main>
+</DashboardLayout>
   );
 }

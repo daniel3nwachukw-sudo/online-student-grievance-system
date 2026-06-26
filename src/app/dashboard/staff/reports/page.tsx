@@ -1,5 +1,6 @@
 'use client';
-
+import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
+import StaffSidebar from '@/src/components/dashboard/StaffSidebar';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -70,7 +71,10 @@ export default function AdminReportsPage() {
   });
 
   return (
-    <main className="container mx-auto p-6">
+    <DashboardLayout
+  title="Staff Dashboard"
+  sidebar={<StaffSidebar />}
+>
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">
@@ -177,6 +181,7 @@ export default function AdminReportsPage() {
 
       </div>
 
-    </main>
+    
+   </DashboardLayout>  
   );
 }
