@@ -14,41 +14,58 @@ export default function AuthGate({
   children: React.ReactNode;
 }) {
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+      try {
+        // ❌ No user → redirect immediately
+        if (!user) {
+          router.replace('/signin');
+          return;
+        }
+
+        const snap = await getDoc(doc(db, 'users', user.uid));
+
+        if (!snap.exists()) {
+          router.replace('/signin');
+          return;
+        }
+
+        const role = snap.data()?.role;
+
+        // 🔥 role-based routing
+        if (role === 'admin') {
+          router.replace('/dashboard/admin');
+        } else if (role === 'staff') {
+          router.replace('/dashboard/staff');
+        } else {
+          router.replace('/dashboard/student');
+        }
+
+      } catch (err) {
+        console.error('AuthGate error:', err);
         router.replace('/signin');
+      } finally {
+        // only mark ready AFTER decision cycle
         setLoading(false);
-        return;
+        setReady(true);
       }
-
-      const snap = await getDoc(doc(db, 'users', user.uid));
-
-      if (!snap.exists()) {
-        router.replace('/signin');
-        setLoading(false);
-        return;
-      }
-
-      const role = snap.data()?.role;
-
-      if (role === 'admin') {
-        router.replace('/dashboard/admin');
-      } else if (role === 'staff') {
-        router.replace('/dashboard/staff');
-      } else {
-        router.replace('/dashboard/student');
-      }
-
-      setLoading(false);
     });
 
     return () => unsub();
   }, [router]);
 
-  if (loading) return <SplashScreen />;
+  /**
+   * 🔥 KEY FIX:
+   * Keep splash until BOTH:
+   * - auth checked
+   * - routing decision made
+   */
+  if (loading || !ready) {
+    return <SplashScreen />;
+  }
 
   return <>{children}</>;
 }
