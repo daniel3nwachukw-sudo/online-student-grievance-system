@@ -13,7 +13,7 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore';
-
+import LogoutButton from '@/src/components/LogoutButton';
 import { auth, db } from '@/src/lib/firebase';
 
 import {
@@ -133,7 +133,9 @@ export default function StaffDashboardPage() {
       <h1 className="text-3xl font-bold mb-6">
         Staff Dashboard
       </h1>
-
+<div className="flex justify-end mb-4">
+  <LogoutButton />
+</div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="border rounded-lg p-4 shadow">
           <h2 className="text-gray-500">Total Complaints</h2>

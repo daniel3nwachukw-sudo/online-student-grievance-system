@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/src/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-
+import LogoutButton from '@/src/components/LogoutButton';
 import {
   collection,
   query,
@@ -164,7 +164,9 @@ export default function AdminDashboardPage() {
       </main>
     );
   }
-
+<div className="flex justify-end mb-4">
+  <LogoutButton />
+</div>
   return (
     <main className="max-w-7xl mx-auto p-8">
 

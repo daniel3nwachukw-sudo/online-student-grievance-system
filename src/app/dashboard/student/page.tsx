@@ -12,7 +12,7 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore';
-
+import LogoutButton from '@/src/components/LogoutButton';
 import { auth, db } from '@/src/lib/firebase';
 
 type Complaint = {
@@ -137,7 +137,9 @@ export default function StudentDashboardPage() {
 
         <p className="text-gray-500 mt-2">
           Student Grievance Dashboard
-        </p>
+        </p><div className="flex justify-end mb-4">
+  <LogoutButton />
+</div>
       </div>
 
       {/* Quick Actions */}
