@@ -13,16 +13,20 @@ type Complaint = {
   department?: string;
   status?: string;
   response?: string;
+  anonymous?: boolean;
+  fullName?: string;
+  email?: string;
 };
 
 export default function Page() {
   const params = useParams();
   const router = useRouter();
-  const id = params?.id as string;
+  const id = typeof params?.id === 'string' ? params.id : '';
 
   const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [loading, setLoading] = useState(true);
   const [response, setResponse] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadComplaint = async () => {
@@ -41,23 +45,35 @@ export default function Page() {
           department: data.department,
           status: data.status,
           response: data.response,
+          anonymous: data.anonymous ?? false,
+          fullName: data.fullName ?? '',
+          email: data.email ?? '',
         });
         setResponse(data.response || '');
+      } else {
+        setComplaint(null);
       }
 
       setLoading(false);
     };
 
-    loadComplaint();
+    loadComplaint().catch(() => setLoading(false));
   }, [id]);
 
   const saveResponse = async () => {
     if (!id) return;
-    await updateDoc(doc(db, 'complaints', id), {
-      response,
-      status: 'Resolved',
-    });
-    setComplaint((prev) => (prev ? { ...prev, response, status: 'Resolved' } : prev));
+    setSaving(true);
+
+    try {
+      await updateDoc(doc(db, 'complaints', id), {
+        response,
+        status: 'Resolved',
+      });
+
+      setComplaint((prev) => (prev ? { ...prev, response, status: 'Resolved' } : prev));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeComplaint = async () => {
@@ -67,49 +83,57 @@ export default function Page() {
   };
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6 text-slate-600">Loading...</div>;
   }
 
   if (!complaint) {
-    return <div className="p-6">Complaint not found.</div>;
+    return <div className="p-6 text-slate-600">Complaint not found.</div>;
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="rounded-xl bg-white p-6 shadow">
-        <h1 className="text-2xl font-bold text-slate-900">{complaint.title || 'Untitled complaint'}</h1>
-        <p className="mt-2 text-sm text-slate-500">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
+      <div className="rounded-xl border border-white/10 bg-[#071b18] p-6 text-white shadow-lg">
+        <h1 className="text-2xl font-bold">{complaint.title || 'Untitled complaint'}</h1>
+        <p className="mt-2 text-sm text-white/70">
           {complaint.category || 'No category'} • {complaint.department || 'No department'}
         </p>
 
-        <div className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+        <div className="mt-4 rounded-lg bg-white/5 p-4 text-sm text-white/85">
           {complaint.description || 'No description available.'}
         </div>
 
-        <p className="mt-4 text-sm">
-          Status: <span className="font-semibold">{complaint.status || 'Unknown'}</span>
-        </p>
+        <div className="mt-4 flex flex-wrap gap-3 text-sm">
+          <span className="rounded-full bg-emerald-600/20 px-3 py-1 text-emerald-200">
+            Status: {complaint.status || 'Unknown'}
+          </span>
+          <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
+            Reporter: {complaint.anonymous ? 'Anonymous' : complaint.fullName || complaint.email || 'Unknown'}
+          </span>
+        </div>
       </div>
 
-      <div className="rounded-xl bg-white p-6 shadow space-y-4">
+      <div className="rounded-xl border bg-white p-6 shadow">
         <h2 className="text-lg font-semibold text-slate-900">Response</h2>
+
         <textarea
           value={response}
           onChange={(e) => setResponse(e.target.value)}
-          className="min-h-[160px] w-full rounded-lg border border-slate-300 p-3 outline-none focus:border-blue-500"
+          className="mt-4 min-h-[160px] w-full rounded-lg border border-slate-300 p-3 outline-none focus:border-emerald-600"
           placeholder="Write your response here..."
         />
 
-        <div className="flex gap-3">
+        <div className="mt-4 flex flex-wrap gap-3">
           <button
             onClick={saveResponse}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            disabled={saving}
+            className="rounded-lg bg-emerald-700 px-4 py-2 text-white transition hover:bg-emerald-800 disabled:opacity-60"
           >
-            Save Response
+            {saving ? 'Saving...' : 'Save Response'}
           </button>
+
           <button
             onClick={removeComplaint}
-            className="rounded-lg bg-rose-600 px-4 py-2 text-white hover:bg-rose-700"
+            className="rounded-lg bg-rose-600 px-4 py-2 text-white transition hover:bg-rose-700"
           >
             Delete
           </button>

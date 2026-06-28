@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { useEffect, useMemo, useState } from 'react';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 
 type Complaint = {
@@ -12,6 +12,11 @@ type Complaint = {
   department?: string;
   status?: string;
   response?: string;
+  rejectionReason?: string;
+  createdAt?: any;
+  anonymous?: boolean;
+  fullName?: string;
+  email?: string;
 };
 
 export default function RejectedPage() {
@@ -19,31 +24,36 @@ export default function RejectedPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'complaints'), orderBy('createdAt', 'desc'));
-
     const unsub = onSnapshot(
-      q,
+      collection(db, 'complaints'),
       (snapshot) => {
-        const list: Complaint[] = [];
-
-        snapshot.forEach((docSnap) => {
+        const list: Complaint[] = snapshot.docs.map((docSnap) => {
           const data = docSnap.data();
-          const status = String(data.status ?? '').trim();
-
-          if (status.toLowerCase() === 'rejected') {
-            list.push({
-              id: docSnap.id,
-              title: data.title ?? '',
-              description: data.description ?? '',
-              category: data.category ?? '',
-              department: data.department ?? '',
-              status: data.status ?? 'Rejected',
-              response: data.response ?? '',
-            });
-          }
+          return {
+            id: docSnap.id,
+            title: data.title ?? '',
+            description: data.description ?? '',
+            category: data.category ?? '',
+            department: data.department ?? '',
+            status: data.status ?? 'Rejected',
+            response: data.response ?? '',
+            rejectionReason: data.rejectionReason ?? '',
+            createdAt: data.createdAt ?? null,
+            anonymous: data.anonymous ?? false,
+            fullName: data.fullName ?? '',
+            email: data.email ?? '',
+          };
         });
 
-        setComplaints(list);
+        const rejectedOnly = list
+          .filter((item) => item.status === 'Rejected')
+          .sort((a, b) => {
+            const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+            const bTime = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+            return bTime - aTime;
+          });
+
+        setComplaints(rejectedOnly);
         setLoading(false);
       },
       () => {
@@ -55,6 +65,8 @@ export default function RejectedPage() {
     return () => unsub();
   }, []);
 
+  const total = useMemo(() => complaints.length, [complaints]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -63,6 +75,10 @@ export default function RejectedPage() {
       </div>
 
       <div className="rounded-xl border bg-white shadow-sm">
+        <div className="border-b px-4 py-3 text-sm text-slate-500">
+          Total rejected: {total}
+        </div>
+
         {loading ? (
           <div className="p-6 text-slate-500">Loading rejected complaints...</div>
         ) : complaints.length === 0 ? (
@@ -70,7 +86,13 @@ export default function RejectedPage() {
         ) : (
           complaints.map((c) => (
             <div key={c.id} className="border-b border-slate-200 p-4 last:border-b-0">
-              <h2 className="text-lg font-semibold text-slate-900">{c.title}</h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-slate-900">{c.title}</h2>
+                <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700">
+                  Rejected
+                </span>
+              </div>
+
               <p className="mt-1 text-slate-700">{c.description}</p>
 
               <div className="mt-2 text-sm text-slate-500">
@@ -79,12 +101,19 @@ export default function RejectedPage() {
               <div className="text-sm text-slate-500">
                 Department: {c.department || '-'}
               </div>
-              <div className="text-sm text-red-700">
-                Status: {c.status || 'Rejected'}
+              <div className="text-sm text-slate-500">
+                Reporter: {c.anonymous ? 'Anonymous' : c.fullName || c.email || 'Unknown'}
               </div>
+
+              {c.rejectionReason ? (
+                <div className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+                  <span className="font-medium">Rejection reason:</span> {c.rejectionReason}
+                </div>
+              ) : null}
+
               {c.response ? (
-                <div className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-                  Response: {c.response}
+                <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+                  <span className="font-medium">Response:</span> {c.response}
                 </div>
               ) : null}
             </div>

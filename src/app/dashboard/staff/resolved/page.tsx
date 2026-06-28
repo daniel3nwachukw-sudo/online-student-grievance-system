@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { useEffect, useMemo, useState } from 'react';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 
 type Complaint = {
@@ -12,6 +12,10 @@ type Complaint = {
   department?: string;
   status?: string;
   response?: string;
+  createdAt?: any;
+  anonymous?: boolean;
+  fullName?: string;
+  email?: string;
 };
 
 export default function ResolvedPage() {
@@ -19,20 +23,12 @@ export default function ResolvedPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'complaints'),
-      where('status', '==', 'Resolved'),
-      orderBy('createdAt', 'desc')
-    );
-
     const unsub = onSnapshot(
-      q,
+      collection(db, 'complaints'),
       (snapshot) => {
-        const list: Complaint[] = [];
-
-        snapshot.forEach((docSnap) => {
+        const list: Complaint[] = snapshot.docs.map((docSnap) => {
           const data = docSnap.data();
-          list.push({
+          return {
             id: docSnap.id,
             title: data.title ?? '',
             description: data.description ?? '',
@@ -40,10 +36,22 @@ export default function ResolvedPage() {
             department: data.department ?? '',
             status: data.status ?? 'Resolved',
             response: data.response ?? '',
-          });
+            createdAt: data.createdAt ?? null,
+            anonymous: data.anonymous ?? false,
+            fullName: data.fullName ?? '',
+            email: data.email ?? '',
+          };
         });
 
-        setComplaints(list);
+        const resolvedOnly = list
+          .filter((item) => item.status === 'Resolved')
+          .sort((a, b) => {
+            const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+            const bTime = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+            return bTime - aTime;
+          });
+
+        setComplaints(resolvedOnly);
         setLoading(false);
       },
       () => {
@@ -55,6 +63,8 @@ export default function ResolvedPage() {
     return () => unsub();
   }, []);
 
+  const total = useMemo(() => complaints.length, [complaints]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -63,6 +73,10 @@ export default function ResolvedPage() {
       </div>
 
       <div className="rounded-xl border bg-white shadow-sm">
+        <div className="border-b px-4 py-3 text-sm text-slate-500">
+          Total resolved: {total}
+        </div>
+
         {loading ? (
           <div className="p-6 text-slate-500">Loading resolved complaints...</div>
         ) : complaints.length === 0 ? (
@@ -70,7 +84,13 @@ export default function ResolvedPage() {
         ) : (
           complaints.map((c) => (
             <div key={c.id} className="border-b border-slate-200 p-4 last:border-b-0">
-              <h2 className="text-lg font-semibold text-slate-900">{c.title}</h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-slate-900">{c.title}</h2>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                  Resolved
+                </span>
+              </div>
+
               <p className="mt-1 text-slate-700">{c.description}</p>
 
               <div className="mt-2 text-sm text-slate-500">
@@ -79,12 +99,13 @@ export default function ResolvedPage() {
               <div className="text-sm text-slate-500">
                 Department: {c.department || '-'}
               </div>
-              <div className="text-sm text-emerald-700">
-                Status: {c.status || 'Resolved'}
+              <div className="text-sm text-slate-500">
+                Reporter: {c.anonymous ? 'Anonymous' : c.fullName || c.email || 'Unknown'}
               </div>
+
               {c.response ? (
-                <div className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-                  Response: {c.response}
+                <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+                  <span className="font-medium">Response:</span> {c.response}
                 </div>
               ) : null}
             </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
 import StaffSidebar from '@/src/components/dashboard/StaffSidebar';
 import { useComplaints } from '@/src/hooks/useComplaints';
@@ -35,6 +36,20 @@ function StatusBadge({ status }: { status?: string }) {
   return <span className="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">Pending</span>;
 }
 
+function formatDayLabel(date: Date) {
+  return date.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+function getLast7Days() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+  }
+  return days;
+}
+
 export default function StaffDashboardPage() {
   const { complaints, loading, error } = useComplaints();
 
@@ -59,6 +74,46 @@ export default function StaffDashboardPage() {
   }, {});
 
   const categoryEntries = Object.entries(categories).slice(0, 4);
+
+  const trendData = useMemo(() => {
+    const days = getLast7Days();
+
+    return days.map((day) => {
+      const key = day.toDateString();
+
+      const count = complaints.filter((c) => {
+        const created = c.createdAt?.seconds
+          ? new Date(c.createdAt.seconds * 1000)
+          : c.date
+            ? new Date(c.date)
+            : null;
+
+        if (!created) return false;
+        return created.toDateString() === key;
+      }).length;
+
+      return {
+        label: formatDayLabel(day),
+        value: count,
+      };
+    });
+  }, [complaints]);
+
+  const trendPoints = useMemo(() => {
+    const max = Math.max(...trendData.map((d) => d.value), 1);
+    const width = 520;
+    const height = 180;
+    const leftPad = 20;
+    const topPad = 20;
+
+    return trendData
+      .map((d, index) => {
+        const x = leftPad + (index * width) / (trendData.length - 1);
+        const y = topPad + (1 - d.value / max) * height;
+        return `${x},${y}`;
+      })
+      .join(' ');
+  }, [trendData]);
 
   return (
     <DashboardLayout title="Staff Dashboard" sidebar={<StaffSidebar />}>
@@ -128,18 +183,53 @@ export default function StaffDashboardPage() {
               </div>
 
               <div className="h-64 rounded-xl bg-white p-4">
-                <svg viewBox="0 0 600 260" className="h-full w-full">
-                  <polyline
-                    fill="none"
-                    stroke="#34d399"
-                    strokeWidth="4"
-                    points="20,180 90,140 160,85 230,125 300,75 370,110 440,35 510,120"
-                  />
-                  <polygon
-                    fill="rgba(52, 211, 153, 0.12)"
-                    points="20,180 90,140 160,85 230,125 300,75 370,110 440,35 510,120 510,240 20,240"
-                  />
-                </svg>
+                {trendData.some((d) => d.value > 0) ? (
+                  <svg viewBox="0 0 560 240" className="h-full w-full">
+                    <defs>
+                      <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#34d399" stopOpacity="0.05" />
+                      </linearGradient>
+                    </defs>
+
+                    <polyline
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={trendPoints}
+                    />
+
+                    <polygon
+                      fill="url(#trendFill)"
+                      points={`20,220 ${trendPoints} 540,220`}
+                    />
+
+                    {trendData.map((d, index) => {
+                      const max = Math.max(...trendData.map((x) => x.value), 1);
+                      const width = 520;
+                      const height = 180;
+                      const leftPad = 20;
+                      const topPad = 20;
+                      const x = leftPad + (index * width) / (trendData.length - 1);
+                      const y = topPad + (1 - d.value / max) * height;
+
+                      return (
+                        <g key={d.label}>
+                          <circle cx={x} cy={y} r="4" fill="#059669" />
+                          <text x={x} y="235" textAnchor="middle" className="fill-slate-500 text-[11px]">
+                            {d.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                    No trend data yet.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -167,7 +257,7 @@ export default function StaffDashboardPage() {
         <div className="rounded-2xl border bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Recent Complaints</h2>
-            <button className="text-sm font-medium text-blue-700 hover:underline">View all</button>
+            <button className="text-sm font-medium text-emerald-700 hover:underline">View all</button>
           </div>
 
           <div className="mt-4 overflow-x-auto">
