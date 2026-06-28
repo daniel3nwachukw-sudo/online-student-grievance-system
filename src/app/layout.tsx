@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import './globals.css';
 import AuthGate from '@/src/components/AuthGate';
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <html lang="en">
