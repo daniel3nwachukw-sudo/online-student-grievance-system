@@ -1,249 +1,329 @@
 'use client';
 
-import Link from "next/link";
-import { useEffect, useState, ChangeEvent, FormEvent } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/src/lib/firebase';
-import { loadUserProfile, saveUserProfile, uploadProfileImage } from '@/src/lib/user';
-import type { UserProfile } from '@/src/lib/types';
+import { useMemo } from 'react';
+import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
+import StaffSidebar from '@/src/components/dashboard/StaffSidebar';
+import { useComplaints } from '@/src/hooks/useComplaints';
+import {
+  FileText,
+  Clock3,
+  CircleCheckBig,
+  CircleX,
+  FileBarChart2,
+  FileCheck2,
+  Users,
+  ClipboardList,
+} from 'lucide-react';
 
-const genders = ['Male', 'Female', 'Other'] as const;
-const levels = ['100 Level', '200 Level', '300 Level', '400 Level', '500 Level'] as const;
-const semesters = ['First Semester', 'Second Semester'] as const;
+const quickActions = [
+  { label: 'View All Complaints', icon: ClipboardList },
+  { label: 'Respond to Complaints', icon: FileCheck2 },
+  { label: 'Generate Report', icon: FileBarChart2 },
+  { label: 'Manage Users', icon: Users },
+];
 
-const initialProfile: UserProfile = {
-  id: '',
-  email: '',
-  fullName: '',
-  role: 'student',
-  matricNumber: '',
-  phoneNumber: '',
-  gender: 'Male',
-  department: '',
-  college: '',
-  level: '100 Level',
-  semester: 'First Semester',
-  session: '',
-  profileImage: '',
-};
+function StatusBadge({ status }: { status?: string }) {
+  const value = (status || '').toLowerCase();
 
-export default function ProfilePage() {
-  const [authUser, setAuthUser] = useState<any>(null);
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  if (value === 'resolved') {
+    return <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Resolved</span>;
+  }
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setAuthUser(null);
-        setLoading(false);
-        return;
-      }
+  if (value === 'rejected') {
+    return <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">Rejected</span>;
+  }
 
-      setAuthUser(user);
-      const existingProfile = await loadUserProfile(user.uid);
-      setProfile({
-        ...initialProfile,
-        id: user.uid,
-        email: user.email ?? '',
-        fullName: user.displayName ?? '',
-        role: 'student',
-        ...existingProfile,
-      });
-      setPreviewImage(existingProfile?.profileImage ?? null);
-      setLoading(false);
+  return <span className="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">Pending</span>;
+}
+
+function formatDayLabel(date: Date) {
+  return date.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+function getLast7Days() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+  }
+  return days;
+}
+
+export default function StaffDashboardPage() {
+  const { complaints, loading, error } = useComplaints();
+
+  const total = complaints.length;
+  const pending = complaints.filter((c) => (c.status || '').toLowerCase() === 'pending').length;
+  const resolved = complaints.filter((c) => (c.status || '').toLowerCase() === 'resolved').length;
+  const rejected = complaints.filter((c) => (c.status || '').toLowerCase() === 'rejected').length;
+
+  const recentComplaints = [...complaints].slice(0, 5).map((c, index) => ({
+    id: c.id || `#${index + 1}`,
+    complainant: c.complainant || 'Anonymous',
+    category: c.category || '-',
+    subject: c.subject || '-',
+    status: c.status || 'Pending',
+    date: c.date || '-',
+  }));
+
+  const categories = complaints.reduce<Record<string, number>>((acc, c) => {
+    const key = c.category || 'Others';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const categoryEntries = Object.entries(categories).slice(0, 4);
+
+  const trendData = useMemo(() => {
+    const days = getLast7Days();
+
+    return days.map((day) => {
+      const key = day.toDateString();
+
+      const count = complaints.filter((c) => {
+        const created = c.createdAt?.seconds
+          ? new Date(c.createdAt.seconds * 1000)
+          : c.date
+            ? new Date(c.date)
+            : null;
+
+        if (!created) return false;
+        return created.toDateString() === key;
+      }).length;
+
+      return {
+        label: formatDayLabel(day),
+        value: count,
+      };
     });
+  }, [complaints]);
 
-    return unsubscribe;
-  }, []);
+  const trendPoints = useMemo(() => {
+    const max = Math.max(...trendData.map((d) => d.value), 1);
+    const width = 520;
+    const height = 180;
+    const leftPad = 20;
+    const topPad = 20;
 
-  function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = event.target;
-    setProfile((current) => ({ ...current, [name]: value }));
-  }
-
-  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    const { files } = event.target;
-    if (!files?.length) return;
-    const file = files[0];
-    setImageFile(file);
-    setPreviewImage(URL.createObjectURL(file));
-  }
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setMessage(null);
-
-    if (!authUser) {
-      setMessage('Please sign in before updating your profile.');
-      return;
-    }
-
-    if (!profile.fullName || !profile.matricNumber || !profile.email || !profile.phoneNumber || !profile.department || !profile.college || !profile.session) {
-      setMessage('Please complete all required fields before saving.');
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      let profileImageUrl = profile.profileImage;
-
-      if (imageFile) {
-        profileImageUrl = await uploadProfileImage(authUser.uid, imageFile);
-      }
-
-      await saveUserProfile({
-        ...profile,
-        profileImage: profileImageUrl,
-        id: authUser.uid,
-        email: authUser.email ?? profile.email,
-        role: 'student',
-      });
-
-      setMessage('Profile saved successfully.');
-    } catch (error) {
-      setMessage('Unable to save your profile. Please try again later.');
-      console.error(error);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <main className="container">
-        <section className="rounded-3xl bg-white p-10 shadow-lg">
-          <h1 className="page-heading">Profile</h1>
-          <p className="text-slate-600">Loading your account...</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (!authUser) {
-    return (
-      <main className="container">
-        <section className="rounded-3xl bg-white p-10 shadow-lg">
-          <h1 className="page-heading">Profile</h1>
-          <p className="text-slate-600 mb-6">You must sign in to manage your student profile.</p>
-          <Link href="/signin" className="rounded-full bg-brand-700 px-6 py-3 text-white hover:bg-brand-800">Sign in</Link>
-        </section>
-      </main>
-    );
-  }
+    return trendData
+      .map((d, index) => {
+        const x = leftPad + (index * width) / (trendData.length - 1);
+        const y = topPad + (1 - d.value / max) * height;
+        return `${x},${y}`;
+      })
+      .join(' ');
+  }, [trendData]);
 
   return (
-    <main className="container">
-      <section className="rounded-3xl bg-white p-10 shadow-lg">
-        <div className="mb-8 grid gap-6 md:grid-cols-[1fr_2fr] md:items-end md:gap-10">
-          <div>
-            <p className="text-sm uppercase tracking-[.3em] text-brand-700">Student Profile</p>
-            <h1 className="page-heading">Edit your profile</h1>
-            <p className="text-slate-600">Update your academic details, contact information, and profile picture.</p>
+    <DashboardLayout title="Staff Dashboard" sidebar={<StaffSidebar />}>
+      <div className="space-y-6">
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            {error}
           </div>
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-            <div className="flex items-center gap-4">
-              <div className="h-20 w-20 overflow-hidden rounded-full bg-slate-200">
-                {previewImage ? (
-                  <img src={previewImage} alt="Profile" className="h-full w-full object-cover" />
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              label: 'Total Complaints',
+              value: total,
+              icon: FileText,
+              bg: 'bg-emerald-50',
+              iconBg: 'bg-emerald-100',
+              iconColor: 'text-emerald-600',
+            },
+            {
+              label: 'Pending',
+              value: pending,
+              icon: Clock3,
+              bg: 'bg-yellow-50',
+              iconBg: 'bg-yellow-100',
+              iconColor: 'text-yellow-600',
+            },
+            {
+              label: 'Resolved',
+              value: resolved,
+              icon: CircleCheckBig,
+              bg: 'bg-emerald-50',
+              iconBg: 'bg-emerald-100',
+              iconColor: 'text-emerald-600',
+            },
+            {
+              label: 'Rejected',
+              value: rejected,
+              icon: CircleX,
+              bg: 'bg-red-50',
+              iconBg: 'bg-red-100',
+              iconColor: 'text-red-600',
+            },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className={`rounded-3xl border border-slate-100 bg-white p-5 shadow-sm ${item.bg}`}>
+                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${item.iconBg}`}>
+                  <Icon className={item.iconColor} size={22} />
+                </div>
+                <p className="text-3xl font-bold text-slate-900">{loading ? '...' : item.value}</p>
+                <p className="mt-1 text-sm text-slate-600">{item.label}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-700">Overview</p>
+              <h2 className="mt-1 text-2xl font-bold text-slate-900">Complaints analytics</h2>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-3xl bg-emerald-50 p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-600">Complaints trend</p>
+                <p className="text-sm font-semibold text-emerald-700">Live data</p>
+              </div>
+
+              <div className="h-64 rounded-2xl bg-white p-4">
+                {trendData.some((d) => d.value > 0) ? (
+                  <svg viewBox="0 0 560 240" className="h-full w-full">
+                    <defs>
+                      <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
+                      </linearGradient>
+                    </defs>
+
+                    <polyline
+                      fill="none"
+                      stroke="#059669"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={trendPoints}
+                    />
+
+                    <polygon
+                      fill="url(#trendFill)"
+                      points={`20,220 ${trendPoints} 540,220`}
+                    />
+
+                    {trendData.map((d, index) => {
+                      const max = Math.max(...trendData.map((x) => x.value), 1);
+                      const width = 520;
+                      const height = 180;
+                      const leftPad = 20;
+                      const topPad = 20;
+                      const x = leftPad + (index * width) / (trendData.length - 1);
+                      const y = topPad + (1 - d.value / max) * height;
+
+                      return (
+                        <g key={d.label}>
+                          <circle cx={x} cy={y} r="4" fill="#059669" />
+                          <text x={x} y="235" textAnchor="middle" className="fill-slate-500 text-[11px]">
+                            {d.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
                 ) : (
-                  <span className="flex h-full w-full items-center justify-center text-xl text-slate-500">{profile.fullName?.[0] ?? 'S'}</span>
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                    No trend data yet.
+                  </div>
                 )}
               </div>
-              <div>
-                <p className="font-semibold">Upload profile picture</p>
-                <p className="text-sm text-slate-500">PNG or JPG, max 5MB.</p>
+            </div>
+
+            <div className="rounded-3xl bg-white p-5">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.25em] text-emerald-700">By category</h3>
+              <div className="flex items-center justify-center">
+                <div className="relative h-48 w-48 rounded-full border-[18px] border-emerald-400 border-r-blue-400 border-b-yellow-400 border-l-purple-400 border-t-transparent rotate-45" />
+              </div>
+              <div className="mt-4 space-y-2 text-sm">
+                {categoryEntries.length ? (
+                  categoryEntries.map(([name, count]) => (
+                    <div key={name} className="flex items-center gap-2 text-slate-700">
+                      <span className="h-3 w-3 rounded bg-emerald-400" />
+                      {name} ({count})
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500">No category data yet.</p>
+                )}
               </div>
             </div>
-            <label className="mt-5 block text-sm font-medium text-slate-700">
-              Change image
-              <input type="file" accept="image/*" onChange={handleImageChange} className="mt-2 block w-full text-sm text-slate-600" />
-            </label>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid gap-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="font-medium">Full Name</span>
-              <input name="fullName" value={profile.fullName} onChange={handleChange} required className="rounded-2xl border border-slate-300 p-4" />
-            </label>
-            <label className="grid gap-2">
-              <span className="font-medium">Matric Number</span>
-              <input name="matricNumber" value={profile.matricNumber} onChange={handleChange} required className="rounded-2xl border border-slate-300 p-4" />
-            </label>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="font-medium">Email Address</span>
-              <input name="email" value={profile.email} type="email" onChange={handleChange} required className="rounded-2xl border border-slate-300 p-4" />
-            </label>
-            <label className="grid gap-2">
-              <span className="font-medium">Phone Number</span>
-              <input name="phoneNumber" value={profile.phoneNumber} onChange={handleChange} required className="rounded-2xl border border-slate-300 p-4" />
-            </label>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="font-medium">Gender</span>
-              <select name="gender" value={profile.gender} onChange={handleChange} className="rounded-2xl border border-slate-300 p-4">
-                {genders.map((gender) => (
-                  <option key={gender} value={gender}>{gender}</option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-2">
-              <span className="font-medium">Department</span>
-              <input name="department" value={profile.department} onChange={handleChange} required className="rounded-2xl border border-slate-300 p-4" />
-            </label>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="font-medium">College / Faculty</span>
-              <input name="college" value={profile.college} onChange={handleChange} required className="rounded-2xl border border-slate-300 p-4" />
-            </label>
-            <label className="grid gap-2">
-              <span className="font-medium">Level</span>
-              <select name="level" value={profile.level} onChange={handleChange} className="rounded-2xl border border-slate-300 p-4">
-                {levels.map((level) => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="font-medium">Semester</span>
-              <select name="semester" value={profile.semester} onChange={handleChange} className="rounded-2xl border border-slate-300 p-4">
-                {semesters.map((semester) => (
-                  <option key={semester} value={semester}>{semester}</option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-2">
-              <span className="font-medium">Academic Session</span>
-              <input name="session" value={profile.session} onChange={handleChange} required className="rounded-2xl border border-slate-300 p-4" placeholder="2025/2026" />
-            </label>
-          </div>
-
-          {message && <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">{message}</div>}
-
-          <div className="flex justify-end">
-            <button type="submit" disabled={saving} className="rounded-full bg-brand-700 px-6 py-3 text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
-              {saving ? 'Saving profile...' : 'Save Changes'}
+        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-700">Activity</p>
+              <h2 className="mt-1 text-2xl font-bold text-slate-900">Recent complaints</h2>
+            </div>
+            <button className="text-sm font-semibold text-emerald-700 hover:underline">
+              View all
             </button>
           </div>
-        </form>
-      </section>
-    </main>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-slate-500">
+                <tr className="border-b border-slate-200">
+                  <th className="py-3 pr-4 font-medium">ID</th>
+                  <th className="py-3 pr-4 font-medium">Complainant</th>
+                  <th className="py-3 pr-4 font-medium">Category</th>
+                  <th className="py-3 pr-4 font-medium">Subject</th>
+                  <th className="py-3 pr-4 font-medium">Status</th>
+                  <th className="py-3 pr-4 font-medium">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentComplaints.map((row) => (
+                  <tr key={row.id} className="border-b border-slate-100 last:border-b-0">
+                    <td className="py-4 pr-4 font-medium text-slate-900">{row.id}</td>
+                    <td className="py-4 pr-4 text-slate-700">{row.complainant}</td>
+                    <td className="py-4 pr-4 text-slate-700">{row.category}</td>
+                    <td className="py-4 pr-4 text-slate-700">{row.subject}</td>
+                    <td className="py-4 pr-4"><StatusBadge status={row.status} /></td>
+                    <td className="py-4 pr-4 text-slate-700">{row.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {!loading && recentComplaints.length === 0 ? (
+              <p className="py-4 text-sm text-slate-500">No complaints found.</p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-700">Quick actions</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-900">Shortcuts</h2>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.label}
+                  className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50"
+                >
+                  <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                    <Icon size={22} />
+                  </div>
+                  <p className="font-semibold text-slate-900">{action.label}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }

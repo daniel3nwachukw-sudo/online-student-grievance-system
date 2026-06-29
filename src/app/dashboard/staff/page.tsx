@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
 import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
 import StaffSidebar from '@/src/components/dashboard/StaffSidebar';
 import { useComplaints } from '@/src/hooks/useComplaints';
@@ -59,21 +60,26 @@ export default function StaffDashboardPage() {
   const rejected = complaints.filter((c) => (c.status || '').toLowerCase() === 'rejected').length;
 
   const recentComplaints = [...complaints].slice(0, 5).map((c, index) => ({
-    id: c.id || `#${index + 1}`,
-    complainant: c.complainant || 'Anonymous',
+    complainant:
+      c.anonymous || c.isAnonymous
+        ? 'Anonymous'
+        : c.complainant || c.reporterName || c.fullName || 'Anonymous',
     category: c.category || '-',
     subject: c.subject || '-',
     status: c.status || 'Pending',
     date: c.date || '-',
+    id: c.id || `#${index + 1}`,
   }));
 
-  const categories = complaints.reduce<Record<string, number>>((acc, c) => {
-    const key = c.category || 'Others';
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
+  const categoryCounts = useMemo(() => {
+    return complaints.reduce<Record<string, number>>((acc, c) => {
+      const key = c.category || 'Others';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+  }, [complaints]);
 
-  const categoryEntries = Object.entries(categories).slice(0, 4);
+  const categoryEntries = Object.entries(categoryCounts).slice(0, 4);
 
   const trendData = useMemo(() => {
     const days = getLast7Days();
@@ -114,6 +120,28 @@ export default function StaffDashboardPage() {
       })
       .join(' ');
   }, [trendData]);
+
+  const donutData = useMemo(() => {
+    const entries = Object.entries(categoryCounts);
+    const totalCount = entries.reduce((sum, [, count]) => sum + count, 0);
+
+    if (!totalCount) return [];
+
+    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444'];
+    let current = 0;
+
+    return entries.map(([name, count], index) => {
+      const percentage = (count / totalCount) * 100;
+      current += percentage;
+
+      return {
+        name,
+        count,
+        percentage,
+        color: colors[index % colors.length],
+      };
+    });
+  }, [categoryCounts]);
 
   return (
     <DashboardLayout title="Staff Dashboard" sidebar={<StaffSidebar />}>
@@ -235,15 +263,54 @@ export default function StaffDashboardPage() {
 
             <div className="rounded-xl bg-white p-4">
               <h3 className="mb-4 text-sm font-semibold text-slate-900">By Category</h3>
+
               <div className="flex items-center justify-center">
-                <div className="relative h-48 w-48 rounded-full border-[18px] border-emerald-400 border-r-blue-400 border-b-yellow-400 border-l-purple-400 border-t-transparent rotate-45" />
+                {donutData.length ? (
+                  <svg viewBox="0 0 200 200" className="h-48 w-48 -rotate-90">
+                    {donutData.map((slice, index) => {
+                      const radius = 70;
+                      const strokeWidth = 22;
+                      const circumference = 2 * Math.PI * radius;
+                      const dash = (slice.percentage / 100) * circumference;
+                      const offset = -donutData
+                        .slice(0, index)
+                        .reduce((sum, item) => sum + (item.percentage / 100) * circumference, 0);
+
+                      return (
+                        <circle
+                          key={slice.name}
+                          cx="100"
+                          cy="100"
+                          r={radius}
+                          fill="none"
+                          stroke={slice.color}
+                          strokeWidth={strokeWidth}
+                          strokeDasharray={`${dash} ${circumference - dash}`}
+                          strokeDashoffset={offset}
+                          strokeLinecap="round"
+                        />
+                      );
+                    })}
+                    <circle cx="100" cy="100" r="48" fill="white" />
+                  </svg>
+                ) : (
+                  <div className="flex h-48 w-48 items-center justify-center rounded-full border-[18px] border-slate-200">
+                    <span className="text-sm text-slate-500">No data</span>
+                  </div>
+                )}
               </div>
+
               <div className="mt-4 space-y-2 text-sm">
-                {categoryEntries.length ? (
-                  categoryEntries.map(([name, count]) => (
-                    <div key={name} className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded bg-emerald-400" />
-                      {name} ({count})
+                {donutData.length ? (
+                  donutData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span>{item.name}</span>
+                      </div>
+                      <span className="text-slate-600">
+                        {item.count} ({item.percentage.toFixed(0)}%)
+                      </span>
                     </div>
                   ))
                 ) : (
@@ -257,14 +324,15 @@ export default function StaffDashboardPage() {
         <div className="rounded-2xl border bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Recent Complaints</h2>
-            <button className="text-sm font-medium text-emerald-700 hover:underline">View all</button>
+            <Link href="/dashboard/staff/complaints" className="text-sm font-medium text-emerald-700 hover:underline">
+              View all
+            </Link>
           </div>
 
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="text-slate-500">
                 <tr className="border-b">
-                  <th className="py-3 pr-4 font-medium">ID</th>
                   <th className="py-3 pr-4 font-medium">Complainant</th>
                   <th className="py-3 pr-4 font-medium">Category</th>
                   <th className="py-3 pr-4 font-medium">Subject</th>
@@ -274,12 +342,13 @@ export default function StaffDashboardPage() {
               </thead>
               <tbody>
                 {recentComplaints.map((row) => (
-                  <tr key={row.id} className="border-b last:border-b-0">
-                    <td className="py-4 pr-4 font-medium text-slate-900">{row.id}</td>
-                    <td className="py-4 pr-4 text-slate-700">{row.complainant}</td>
+                  <tr key={`${row.complainant}-${row.subject}-${row.date}`} className="border-b last:border-b-0">
+                    <td className="py-4 pr-4 font-medium text-slate-900">{row.complainant}</td>
                     <td className="py-4 pr-4 text-slate-700">{row.category}</td>
                     <td className="py-4 pr-4 text-slate-700">{row.subject}</td>
-                    <td className="py-4 pr-4"><StatusBadge status={row.status} /></td>
+                    <td className="py-4 pr-4">
+                      <StatusBadge status={row.status} />
+                    </td>
                     <td className="py-4 pr-4 text-slate-700">{row.date}</td>
                   </tr>
                 ))}

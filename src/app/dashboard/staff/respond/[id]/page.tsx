@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
+import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
+import StaffSidebar from '@/src/components/dashboard/StaffSidebar';
+import { ArrowLeft, Send, CheckCircle2, Loader2 } from 'lucide-react';
 
 type Complaint = {
   id: string;
@@ -15,24 +18,31 @@ type Complaint = {
   response?: string;
 };
 
-export default function RespondComplaintPage() {
-  const params = useParams();
+export default function ComplaintResponsePage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const id = String(params.id);
+  const id = params?.id;
 
   const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [response, setResponse] = useState('');
+  const [status, setStatus] = useState('In Progress');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const loadComplaint = async () => {
-      setLoading(true);
-      try {
-        const snap = await getDoc(doc(db, 'complaints', id));
+    if (!id) return;
 
+    const ref = doc(db, 'complaints', id);
+
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
         if (!snap.exists()) {
           setComplaint(null);
+          setLoading(false);
+          setError('Complaint not found.');
           return;
         }
 
@@ -47,143 +57,155 @@ export default function RespondComplaintPage() {
           response: data.response ?? '',
         });
         setResponse(data.response ?? '');
-      } finally {
+        setStatus(data.status ?? 'In Progress');
         setLoading(false);
+        setError('');
+      },
+      () => {
+        setComplaint(null);
+        setLoading(false);
+        setError('Failed to load complaint.');
       }
-    };
+    );
 
-    if (id) loadComplaint();
+    return () => unsub();
   }, [id]);
 
-  const updateComplaint = async (status: string) => {
-    if (!complaint) return;
+  async function handleSave() {
+    if (!id) return;
 
     setSaving(true);
+    setSaved(false);
+    setError('');
+
     try {
-      await updateDoc(doc(db, 'complaints', complaint.id), {
+      await updateDoc(doc(db, 'complaints', id), {
         response,
         status,
+        updatedAt: new Date(),
       });
-      router.push('/dashboard/staff/respond');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setError('Failed to save response.');
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleDelete = async () => {
-    if (!complaint) return;
-
-    setSaving(true);
-    try {
-      await deleteDoc(doc(db, 'complaints', complaint.id));
-      router.push('/dashboard/staff/respond');
-    } finally {
-      setSaving(false);
-    }
-  };
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Respond to Complaint</h1>
-        <p className="mt-2 text-gray-500">Review the complaint and take action.</p>
+    <DashboardLayout title="Respond to Complaint" sidebar={<StaffSidebar />}>
+      <div className="space-y-6">
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+
+        <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm">
+          <h1 className="text-3xl font-bold text-slate-900">Complaint Response</h1>
+          <p className="mt-2 text-slate-600">
+            Review the complaint and send your response.
+          </p>
+        </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="rounded-3xl border bg-white p-6 text-slate-500 shadow-sm">
+            Loading complaint...
+          </div>
+        ) : complaint ? (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-slate-900">{complaint.title}</h2>
+              <p className="mt-3 text-slate-700">{complaint.description}</p>
+
+              <div className="mt-5 space-y-3 text-sm text-slate-600">
+                <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                  <span className="font-medium text-slate-800">Category:</span> {complaint.category || '-'}
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                  <span className="font-medium text-slate-800">Department:</span> {complaint.department || '-'}
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                  <span className="font-medium text-slate-800">Current Status:</span> {complaint.status || 'Pending'}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="text-emerald-700" size={20} />
+                <h2 className="text-xl font-semibold text-slate-900">Write Response</h2>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Update Status
+                  </label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none ring-0 focus:border-emerald-500"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Response
+                  </label>
+                  <textarea
+                    value={response}
+                    onChange={(e) => setResponse(e.target.value)}
+                    rows={8}
+                    placeholder="Write your response here..."
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none ring-0 focus:border-emerald-500"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      Save Response
+                    </>
+                  )}
+                </button>
+
+                {saved ? (
+                  <p className="text-sm font-medium text-emerald-700">Response saved successfully.</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-3xl border bg-white p-6 text-slate-500 shadow-sm">
+            Complaint not found.
+          </div>
+        )}
       </div>
-
-      {loading ? (
-        <div className="rounded-xl border bg-white p-5 shadow-sm text-slate-500">
-          Loading complaint...
-        </div>
-      ) : !complaint ? (
-        <div className="rounded-xl border bg-white p-5 shadow-sm text-slate-500">
-          Complaint not found.
-        </div>
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-xl border bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">Complaint Details</h2>
-
-            <div className="mt-4 space-y-3">
-              <div>
-                <p className="text-sm text-slate-500">Title</p>
-                <p className="font-medium text-slate-900">{complaint.title}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Description</p>
-                <p className="text-slate-700">{complaint.description}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Category</p>
-                <p className="text-slate-700">{complaint.category || '-'}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Department</p>
-                <p className="text-slate-700">{complaint.department || '-'}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Status</p>
-                <p className="font-medium text-blue-900">{complaint.status}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">Write Response</h2>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Response
-                </label>
-                <textarea
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                  rows={8}
-                  className="w-full rounded-lg border border-slate-300 p-3 outline-none focus:ring-2 focus:ring-blue-700"
-                  placeholder="Write your response..."
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => updateComplaint('In Progress')}
-                  disabled={saving}
-                  className="rounded-lg bg-blue-900 px-5 py-2 text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? 'Saving...' : 'Save Response'}
-                </button>
-
-                <button
-                  onClick={() => updateComplaint('Resolved')}
-                  disabled={saving}
-                  className="rounded-lg bg-emerald-600 px-5 py-2 text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Mark Resolved
-                </button>
-
-                <button
-                  onClick={() => updateComplaint('Rejected')}
-                  disabled={saving}
-                  className="rounded-lg bg-red-600 px-5 py-2 text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Mark Rejected
-                </button>
-
-                <button
-                  onClick={handleDelete}
-                  disabled={saving}
-                  className="rounded-lg bg-slate-800 px-5 py-2 text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </DashboardLayout>
   );
 }

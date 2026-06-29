@@ -20,6 +20,7 @@ import {
   UserCircle2,
   Settings,
   User,
+  Users,
 } from 'lucide-react';
 import { auth } from '@/src/lib/firebase';
 
@@ -32,6 +33,7 @@ const navItems = [
   { label: 'Respond to Complaints', href: '/dashboard/staff/respond', icon: Reply },
   { label: 'Reports & Analytics', href: '/dashboard/staff/report-analytics', icon: BarChart3 },
   { label: 'Departments', href: '/dashboard/staff/departments', icon: Building2 },
+  { label: 'Manage Users', href: '/dashboard/staff/users', icon: Users },
   { label: 'Profile', href: '/dashboard/staff/profile', icon: User },
   { label: 'Settings', href: '/dashboard/staff/settings', icon: Settings },
 ];
@@ -44,9 +46,7 @@ export default function StaffSidebar() {
   const closeSidebar = () => setOpen(false);
 
   const handleNavClick = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      closeSidebar();
-    }
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) closeSidebar();
   };
 
   const handleLogout = async () => {
@@ -63,14 +63,14 @@ export default function StaffSidebar() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="fixed left-4 top-4 z-[100] flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg transition hover:bg-slate-900 lg:hidden"
+        className="fixed left-4 top-4 z-[100] flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-white shadow-lg transition hover:bg-emerald-800 lg:hidden"
         aria-label={open ? 'Close sidebar' : 'Open sidebar'}
       >
         {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-hidden bg-[#071b18] text-white transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-hidden bg-gradient-to-b from-emerald-950 to-slate-950 text-white transition-transform duration-300 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -100,7 +100,7 @@ export default function StaffSidebar() {
                 href={item.href}
                 onClick={handleNavClick}
                 className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 transition ${
-                  active ? 'bg-emerald-700 text-white' : 'text-white/85 hover:bg-white/8'
+                  active ? 'bg-emerald-700 text-white' : 'text-white/85 hover:bg-white/10'
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-3">
@@ -114,7 +114,7 @@ export default function StaffSidebar() {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-white/85 transition hover:bg-white/8"
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-white/85 transition hover:bg-white/10"
           >
             <LogOut size={18} />
             <span className="text-sm font-medium">Logout</span>
@@ -122,7 +122,7 @@ export default function StaffSidebar() {
         </nav>
 
         <div className="shrink-0 p-4">
-          <div className="rounded-2xl border border-white/10 bg-emerald-950/80 p-4">
+          <div className="rounded-2xl border border-white/10 bg-emerald-950/70 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white/10">
                 <UserCircle2 size={42} className="text-white/90" />

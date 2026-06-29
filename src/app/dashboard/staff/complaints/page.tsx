@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 import {
-  ArrowRight,
-  ClipboardList,
+  ArrowLeft,
+  Search,
   FileText,
   Tag,
   Building2,
   BadgeInfo,
+  ArrowRight,
 } from 'lucide-react';
 
 type Complaint = {
@@ -44,7 +45,7 @@ function StatusBadge({ status }: { status?: string }) {
 
   if (value === 'in progress') {
     return (
-      <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+      <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
         In Progress
       </span>
     );
@@ -57,9 +58,10 @@ function StatusBadge({ status }: { status?: string }) {
   );
 }
 
-export default function RespondPage() {
+export default function StaffComplaintsPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, 'complaints'), orderBy('createdAt', 'desc'));
@@ -92,30 +94,61 @@ export default function RespondPage() {
     return () => unsub();
   }, []);
 
+  const filteredComplaints = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return complaints;
+
+    return complaints.filter((c) => {
+      const haystack = [
+        c.title,
+        c.description,
+        c.category,
+        c.department,
+        c.status,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }, [complaints, search]);
+
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-            <ClipboardList size={22} />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Respond to Complaints</h1>
-            <p className="mt-2 text-slate-600">
-              Review each complaint, check its status, and open the response page.
-            </p>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <Link
+            href="/dashboard/staff"
+            className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 hover:underline"
+          >
+            <ArrowLeft size={16} />
+            Back to dashboard
+          </Link>
+          <h1 className="mt-3 text-3xl font-bold text-slate-900">All Complaints</h1>
+          <p className="mt-2 text-slate-500">Search and open any complaint to respond.</p>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <Search size={18} className="text-slate-500" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title, category, department, status..."
+            className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+          />
         </div>
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
         {loading ? (
           <div className="p-6 text-slate-500">Loading complaints...</div>
-        ) : complaints.length === 0 ? (
-          <div className="p-6 text-slate-500">No complaints found.</div>
+        ) : filteredComplaints.length === 0 ? (
+          <div className="p-6 text-slate-500">No complaints match your search.</div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {complaints.map((c) => (
+            {filteredComplaints.map((c) => (
               <div key={c.id} className="p-4 md:p-5">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="flex-1 space-y-3">
