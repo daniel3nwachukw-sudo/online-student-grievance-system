@@ -13,7 +13,7 @@ const MAX_FILES = 5;
 const categories = ['Academic', 'Facilities', 'Safety', 'Staff', 'Examination', 'Other'];
 const semesters = ['First Semester', 'Second Semester'];
 
-export default function NewComplaintPage() {
+export default function AnonymousComplaintPage() {
   const router = useRouter();
   const { profile } = useUserProfile();
 
@@ -105,8 +105,7 @@ export default function NewComplaintPage() {
 
     setLoading(true);
 
-    try {
-    await submitGrievance({
+    try {await submitGrievance({
   title,
   description,
   category,
@@ -114,9 +113,9 @@ export default function NewComplaintPage() {
   issueSemester,
   issueSession: profile?.session || '2025/2026',
   issueLevel,
-  anonymous: false,
-  reporterId: user.uid,
-  reporterName: studentName,
+  anonymous: true,
+  reporterId: 'anonymous',
+  reporterName: 'Anonymous',
 });
 
       router.push('/dashboard/student');
@@ -133,14 +132,14 @@ export default function NewComplaintPage() {
       <section className="rounded-3xl bg-white p-10 shadow-lg">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h1 className="page-heading">Submit a New Complaint</h1>
+            <h1 className="page-heading">Submit Anonymous Complaint</h1>
             <p className="text-slate-600">
-              Your profile details will be attached automatically.
+              Your identity will be hidden, but your profile details will still be used internally.
             </p>
           </div>
 
-          <span className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700">
-            Normal Mode
+          <span className="rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700">
+            Anonymous Mode
           </span>
         </div>
 

@@ -16,6 +16,21 @@ import {
   ClipboardList,
 } from 'lucide-react';
 
+type Complaint = {
+  id: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  department?: string;
+  status?: string;
+  response?: string;
+  anonymous?: boolean;
+  isAnonymous?: boolean;
+  reporterName?: string;
+  fullName?: string;
+  name?: string;
+};
+
 const quickActions = [
   { label: 'View All Complaints', icon: ClipboardList },
   { label: 'Respond to Complaints', icon: FileCheck2 },
@@ -54,32 +69,32 @@ function getLast7Days() {
 export default function StaffDashboardPage() {
   const { complaints, loading, error } = useComplaints();
 
-  const total = complaints.length;
-  const pending = complaints.filter((c) => (c.status || '').toLowerCase() === 'pending').length;
-  const resolved = complaints.filter((c) => (c.status || '').toLowerCase() === 'resolved').length;
-  const rejected = complaints.filter((c) => (c.status || '').toLowerCase() === 'rejected').length;
+  const typedComplaints = complaints as Complaint[];
 
-  const recentComplaints = [...complaints].slice(0, 5).map((c, index) => ({
+  const total = typedComplaints.length;
+  const pending = typedComplaints.filter((c) => (c.status || '').toLowerCase() === 'pending').length;
+  const resolved = typedComplaints.filter((c) => (c.status || '').toLowerCase() === 'resolved').length;
+  const rejected = typedComplaints.filter((c) => (c.status || '').toLowerCase() === 'rejected').length;
+
+  const recentComplaints = [...typedComplaints].slice(0, 5).map((c, index) => ({
     complainant:
       c.anonymous || c.isAnonymous
         ? 'Anonymous'
-        : c.complainant || c.reporterName || c.fullName || 'Anonymous',
+        : c.reporterName || c.fullName || c.name || 'Anonymous',
     category: c.category || '-',
-    subject: c.subject || '-',
+    subject: c.title || '-',
     status: c.status || 'Pending',
-    date: c.date || '-',
+    date: c.response || '-',
     id: c.id || `#${index + 1}`,
   }));
 
   const categoryCounts = useMemo(() => {
-    return complaints.reduce<Record<string, number>>((acc, c) => {
+    return typedComplaints.reduce<Record<string, number>>((acc, c) => {
       const key = c.category || 'Others';
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-  }, [complaints]);
-
-  const categoryEntries = Object.entries(categoryCounts).slice(0, 4);
+  }, [typedComplaints]);
 
   const trendData = useMemo(() => {
     const days = getLast7Days();
@@ -87,12 +102,10 @@ export default function StaffDashboardPage() {
     return days.map((day) => {
       const key = day.toDateString();
 
-      const count = complaints.filter((c) => {
-        const created = c.createdAt?.seconds
-          ? new Date(c.createdAt.seconds * 1000)
-          : c.date
-            ? new Date(c.date)
-            : null;
+      const count = typedComplaints.filter((c) => {
+        const created = (c as { createdAt?: { seconds?: number } }).createdAt?.seconds
+          ? new Date((c as { createdAt?: { seconds?: number } }).createdAt!.seconds! * 1000)
+          : null;
 
         if (!created) return false;
         return created.toDateString() === key;
@@ -103,7 +116,7 @@ export default function StaffDashboardPage() {
         value: count,
       };
     });
-  }, [complaints]);
+  }, [typedComplaints]);
 
   const trendPoints = useMemo(() => {
     const max = Math.max(...trendData.map((d) => d.value), 1);
@@ -128,11 +141,9 @@ export default function StaffDashboardPage() {
     if (!totalCount) return [];
 
     const colors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444'];
-    let current = 0;
 
     return entries.map(([name, count], index) => {
       const percentage = (count / totalCount) * 100;
-      current += percentage;
 
       return {
         name,
