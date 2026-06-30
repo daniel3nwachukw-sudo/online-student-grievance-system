@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, getDoc, onSnapshot, query, where, Unsubscribe } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, where } from 'firebase/firestore';
 import { auth, db } from '@/src/lib/firebase';
+
 import {
   ArrowRight,
   MessageSquareText,
@@ -13,6 +14,7 @@ import {
   Clock3,
   CircleCheckBig,
   Search,
+  FileText,
 } from 'lucide-react';
 
 type ResponseItem = {
@@ -67,13 +69,37 @@ function formatDateTime(createdAt?: ResponseItem['createdAt']) {
   })}`;
 }
 
-export default function ResponsesPage() {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+          <Icon size={20} />
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-slate-900">{value}</p>
+          <p className="text-sm text-slate-500">{label}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function StudentResponsesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [responses, setResponses] = useState<ResponseItem[]>([]);
 
   useEffect(() => {
-    let unsubscribeResponses: Unsubscribe | undefined;
+    let unsubscribeResponses: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -88,6 +114,7 @@ export default function ResponsesPage() {
       }
 
       const userData = userSnap.data();
+
       if (userData.role === 'staff') {
         router.replace('/dashboard/staff');
         return;
@@ -150,10 +177,10 @@ export default function ResponsesPage() {
             </div>
 
             <Link
-              href="/complaint"
+              href="/dashboard/student/complaints"
               className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
             >
-              <MessageSquareText size={16} />
+              <FileText size={16} />
               My Complaints
             </Link>
           </div>
@@ -191,7 +218,7 @@ export default function ResponsesPage() {
           ) : (
             <div className="divide-y divide-slate-100">
               {responses.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 p-5">
+                <div key={item.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
                     <ShieldCheck size={22} />
                   </div>
@@ -200,7 +227,7 @@ export default function ResponsesPage() {
                     <h3 className="truncate font-semibold text-slate-900">
                       {item.complaintTitle || 'Complaint Response'}
                     </h3>
-                    <p className="mt-1 truncate text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-500">
                       {item.response || 'No response text available.'}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
@@ -208,16 +235,18 @@ export default function ResponsesPage() {
                     </p>
                   </div>
 
-                  <StatusBadge status={item.status} />
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={item.status} />
 
-                  {item.complaintId ? (
-                    <Link
-                      href={`/complaint/${item.complaintId}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700"
-                    >
-                      <ArrowRight size={18} />
-                    </Link>
-                  ) : null}
+                    {item.complaintId ? (
+                      <Link
+                        href={`/dashboard/student/complaints/${item.complaintId}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+                      >
+                        <ArrowRight size={18} />
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
@@ -225,29 +254,5 @@ export default function ResponsesPage() {
         </div>
       </div>
     </main>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: number;
-}) {
-  return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-          <Icon size={20} />
-        </div>
-        <div>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
-          <p className="text-sm text-slate-500">{label}</p>
-        </div>
-      </div>
-    </div>
   );
 }

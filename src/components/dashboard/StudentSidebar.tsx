@@ -29,12 +29,12 @@ type UserInfo = {
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard/student', icon: LayoutDashboard },
-  { label: 'My Complaints', href: '/complaint', icon: FileText },
-  { label: 'Submit Complaint', href: '/submit', icon: PenTool },
+  { label: 'My Complaints', href: '/dashboard/student/complaints', icon: FileText },
+  { label: 'Submit Complaint', href: '/dashboard/student/new', icon: PenTool },
   { label: 'Anonymous Complaint', href: '/dashboard/student/anonymous', icon: ShieldCheck },
-  { label: 'Track Complaint', href: '/complaint', icon: ScanSearch },
-  { label: 'Responses', href: '/responses', icon: MessageSquareText },
-  { label: 'My Profile', href: '/profile', icon: UserRound },
+  { label: 'Track Complaint', href: '/dashboard/student/track', icon: ScanSearch },
+  { label: 'Responses', href: '/dashboard/student/responses', icon: MessageSquareText },
+  { label: 'My Profile', href: '/dashboard/student/profile', icon: UserRound },
 ];
 
 export default function StudentSidebar() {

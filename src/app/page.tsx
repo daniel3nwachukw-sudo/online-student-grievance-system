@@ -1,74 +1,165 @@
-import Link from 'next/link';
+'use client';
 
-export default function HomePage() {
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.push('/signin');
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [router]);
+
   return (
-    <>
-      {/* Hero */}
-      <section className="relative bg-gradient-to-br from-slate-50 to-brand-50 py-20">
-        <div className="container grid gap-12 md:grid-cols-2 items-center">
-          <div>
-            <h1 className="text-5xl font-bold text-slate-900 mb-6">
-              Student Grievance Portal
-            </h1>
+    <main className="splash-bg">
+      <div className="splash-blob splash-blob-one" />
+      <div className="splash-blob splash-blob-two" />
 
-            <p className="text-xl text-slate-600 mb-8">
-              A secure platform for submitting grievances and tracking complaint status online.
-            </p>
+      <section className="splash-glass">
+        <div className="splash-logo">GS</div>
 
-            <div className="flex gap-4">
-              <Link
-                href="/signin"
-                className="rounded-full bg-brand-700 px-8 py-3 text-white font-semibold hover:bg-brand-800 shadow-lg"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
+        <h1 className="splash-title">Online Student Grievance System</h1>
+
+        <p className="splash-text">
+          Report issues, track complaints, and stay updated in one place.
+        </p>
+
+        <div className="splash-loader">
+          <span />
+          <span />
+          <span />
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-20">
-        <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Key Features
-          </h2>
+      <style jsx>{`
+        .splash-bg {
+          min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+        }
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                icon: '📝',
-                title: 'Lodge Grievance',
-                desc: 'Submit complaints about academic or admin issues',
-              },
-              {
-                icon: '🔍',
-                title: 'Track Complaint',
-                desc: 'Monitor status of submitted grievances',
-              },
-              {
-                icon: '📢',
-                title: 'Notices & Updates',
-                desc: 'Stay informed with latest announcements',
-              },
-            ].map((f) => (
-              <div
-                key={f.title}
-                className="rounded-2xl bg-white p-6 text-center shadow-lg border"
-              >
-                <div className="text-4xl mb-4">{f.icon}</div>
-                <h3 className="font-bold text-lg mb-2">{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        .splash-blob {
+          position: absolute;
+          border-radius: 999px;
+          filter: blur(70px);
+          opacity: 0.55;
+          animation: float 10s ease-in-out infinite;
+        }
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12 text-center">
-        <p>© {new Date().getFullYear()} UNIPORTAL</p>
-      </footer>
-    </>
+        .splash-blob-one {
+          width: 320px;
+          height: 320px;
+          top: -60px;
+          left: -80px;
+          background: rgba(14, 165, 233, 0.6);
+        }
+
+        .splash-blob-two {
+          width: 360px;
+          height: 360px;
+          bottom: -100px;
+          right: -90px;
+          background: rgba(16, 185, 129, 0.6);
+          animation-delay: 2s;
+        }
+
+        .splash-glass {
+          position: relative;
+          z-index: 2;
+          width: min(92%, 460px);
+          padding: 36px 28px;
+          border-radius: 28px;
+          background: rgba(255, 255, 255, 0.14);
+          border: 1px solid rgba(255, 255, 255, 0.28);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+          text-align: center;
+        }
+
+        .splash-logo {
+          width: 78px;
+          height: 78px;
+          margin: 0 auto 18px;
+          border-radius: 24px;
+          display: grid;
+          place-items: center;
+          font-size: 24px;
+          font-weight: 800;
+          color: white;
+          background: rgba(255, 255, 255, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .splash-title {
+          margin: 0;
+          color: #fff;
+          font-size: 28px;
+          line-height: 1.2;
+          font-weight: 800;
+        }
+
+        .splash-text {
+          margin: 14px 0 0;
+          color: rgba(255, 255, 255, 0.88);
+          font-size: 15px;
+          line-height: 1.7;
+        }
+
+        .splash-loader {
+          margin-top: 24px;
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .splash-loader span {
+          width: 10px;
+          height: 10px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.95);
+          animation: bounce 1.2s infinite ease-in-out;
+        }
+
+        .splash-loader span:nth-child(2) {
+          animation-delay: 0.15s;
+        }
+
+        .splash-loader span:nth-child(3) {
+          animation-delay: 0.3s;
+        }
+
+        @keyframes bounce {
+          0%,
+          80%,
+          100% {
+            transform: scale(0.6);
+            opacity: 0.5;
+          }
+          40% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px) translateX(0px) scale(1);
+          }
+          50% {
+            transform: translateY(20px) translateX(10px) scale(1.05);
+          }
+        }
+      `}</style>
+    </main>
   );
 }

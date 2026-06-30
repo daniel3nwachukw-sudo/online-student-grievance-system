@@ -5,7 +5,15 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/src/lib/firebase';
-import { UserRound, Mail, Phone, School, BookOpen, Hash, Save } from 'lucide-react';
+import {
+  UserRound,
+  Mail,
+  Phone,
+  School,
+  BookOpen,
+  Hash,
+  Save,
+} from 'lucide-react';
 
 type ProfileData = {
   fullName?: string;
@@ -23,7 +31,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
@@ -41,9 +48,8 @@ export default function ProfilePage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        if (ready) router.replace('/signin');
         setLoading(false);
-        setReady(true);
+        router.replace('/signin');
         return;
       }
 
@@ -51,6 +57,7 @@ export default function ProfilePage() {
 
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (!snap.exists()) {
+        setLoading(false);
         router.replace('/signin');
         return;
       }
@@ -58,11 +65,13 @@ export default function ProfilePage() {
       const data = snap.data() as ProfileData;
 
       if (data.role === 'staff') {
+        setLoading(false);
         router.replace('/dashboard/staff');
         return;
       }
 
       if (data.role === 'admin') {
+        setLoading(false);
         router.replace('/dashboard/admin');
         return;
       }
@@ -79,11 +88,10 @@ export default function ProfilePage() {
       });
 
       setLoading(false);
-      setReady(true);
     });
 
     return unsubscribe;
-  }, [router, ready]);
+  }, [router]);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement>
@@ -118,9 +126,14 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-slate-50 p-6">
       <div className="mx-auto max-w-4xl rounded-3xl bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
+          <p className="mt-1 text-slate-600">
+            Update your personal and academic details.
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
+        <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
           <InputField icon={UserRound} label="Full Name" name="fullName" value={profile.fullName} onChange={handleChange} />
           <InputField icon={Mail} label="Email" name="email" value={profile.email} onChange={handleChange} />
           <InputField icon={Hash} label="Matric No." name="matricNo" value={profile.matricNo} onChange={handleChange} />
@@ -131,18 +144,22 @@ export default function ProfilePage() {
           <InputField icon={Phone} label="Phone" name="phone" value={profile.phone} onChange={handleChange} />
 
           <div className="md:col-span-2 flex items-center justify-between">
-            <p className="text-sm text-slate-500">Your profile info is used for complaint records.</p>
+            <p className="text-sm text-slate-500">
+              These details are used for your complaint records.
+            </p>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-6 py-3 text-sm font-semibold text-white"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60"
             >
               <Save size={16} />
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
 
-          {message ? <p className="md:col-span-2 text-sm text-slate-600">{message}</p> : null}
+          {message ? (
+            <p className="md:col-span-2 text-sm text-slate-600">{message}</p>
+          ) : null}
         </form>
       </div>
     </main>

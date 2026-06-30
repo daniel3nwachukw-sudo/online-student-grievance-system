@@ -1,73 +1,186 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-type SplashScreenProps = {
-  show?: boolean;
-};
-
-export default function SplashScreen({ show = true }: SplashScreenProps) {
-  const [visible, setVisible] = useState(show);
-  const [mounted, setMounted] = useState(show);
-  const [dots, setDots] = useState('');
+export default function SplashPage() {
+  const router = useRouter();
 
   useEffect(() => {
-    if (show) {
-      setMounted(true);
-      const raf = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(raf);
-    }
+    const timer = setTimeout(() => {
+      router.push('/signin');
+    }, 2500);
 
-    setVisible(false);
-    const timeout = setTimeout(() => setMounted(false), 350);
-    return () => clearTimeout(timeout);
-  }, [show]);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    const interval = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
-    }, 450);
-
-    return () => clearInterval(interval);
-  }, [mounted]);
-
-  if (!mounted) return null;
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
-    <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-950 via-[#0b2f2a] to-slate-950 text-white transition-opacity duration-300 ease-in-out ${
-        visible ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_40%),radial-gradient(circle_at_bottom,rgba(34,197,94,0.10),transparent_35%)]" />
+    <main className="splash-bg">
+      <div className="splash-blob splash-blob-one" />
+      <div className="splash-blob splash-blob-two" />
+      <div className="splash-blob splash-blob-three" />
 
-      <div
-        className={`relative text-center transition-all duration-300 ease-out ${
-          visible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
-        }`}
-      >
-        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/8 shadow-2xl backdrop-blur-md animate-pulse">
-          <span className="text-3xl font-bold tracking-wide">SG</span>
+      <section className="splash-glass">
+        <div className="splash-logo-wrap">
+          <div className="splash-logo">GS</div>
         </div>
 
-        <h1 className="text-3xl font-bold tracking-wide text-white sm:text-4xl">
-          Student Grievance System
-        </h1>
+        <h1 className="splash-title">Online Student Grievance System</h1>
 
-        <p className="mt-3 text-sm text-white/75">Loading{dots}</p>
+        <p className="splash-text">
+          Report issues, track complaints, and stay updated in one place.
+        </p>
 
-        <div className="mt-6 mx-auto h-1 w-64 overflow-hidden rounded-full bg-white/15">
-          <div className="h-full w-1/2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="splash-loader" aria-label="Loading">
+          <span />
+          <span />
+          <span />
         </div>
+      </section>
 
-        <div className="mt-6 flex items-center justify-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.3s]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.15s]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-bounce" />
-        </div>
-      </div>
-    </div>
+      <style jsx>{`
+        .splash-bg {
+          min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+        }
+
+        .splash-blob {
+          position: absolute;
+          border-radius: 999px;
+          filter: blur(80px);
+          opacity: 0.55;
+          pointer-events: none;
+          animation: float 12s ease-in-out infinite;
+        }
+
+        .splash-blob-one {
+          width: 360px;
+          height: 360px;
+          top: -80px;
+          left: -90px;
+          background: rgba(14, 165, 233, 0.65);
+        }
+
+        .splash-blob-two {
+          width: 400px;
+          height: 400px;
+          bottom: -120px;
+          right: -110px;
+          background: rgba(16, 185, 129, 0.65);
+          animation-delay: 2s;
+        }
+
+        .splash-blob-three {
+          width: 240px;
+          height: 240px;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(255, 255, 255, 0.16);
+          animation-delay: 4s;
+        }
+
+        .splash-glass {
+          position: relative;
+          z-index: 2;
+          width: min(92%, 470px);
+          padding: 38px 30px;
+          border-radius: 30px;
+          background: rgba(255, 255, 255, 0.14);
+          border: 1px solid rgba(255, 255, 255, 0.28);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+          text-align: center;
+        }
+
+        .splash-logo-wrap {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 18px;
+        }
+
+        .splash-logo {
+          width: 82px;
+          height: 82px;
+          border-radius: 24px;
+          display: grid;
+          place-items: center;
+          font-size: 26px;
+          font-weight: 800;
+          color: white;
+          background: rgba(255, 255, 255, 0.16);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .splash-title {
+          margin: 0;
+          color: #ffffff;
+          font-size: clamp(26px, 4vw, 32px);
+          line-height: 1.15;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+        }
+
+        .splash-text {
+          margin: 14px 0 0;
+          color: rgba(255, 255, 255, 0.88);
+          font-size: 15px;
+          line-height: 1.7;
+        }
+
+        .splash-loader {
+          margin-top: 26px;
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .splash-loader span {
+          width: 10px;
+          height: 10px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.95);
+          animation: bounce 1.2s infinite ease-in-out;
+        }
+
+        .splash-loader span:nth-child(2) {
+          animation-delay: 0.15s;
+        }
+
+        .splash-loader span:nth-child(3) {
+          animation-delay: 0.10s;
+        }
+
+        @keyframes bounce {
+          0%,
+          80%,
+          100% {
+            transform: scale(0.6);
+            opacity: 0.5;
+          }
+          40% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px) translateX(0px) scale(1);
+          }
+          50% {
+            transform: translateY(20px) translateX(10px) scale(1.05);
+          }
+        }
+      `}</style>
+    </main>
   );
 }

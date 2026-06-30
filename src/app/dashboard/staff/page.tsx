@@ -67,7 +67,7 @@ function getLast7Days() {
 }
 
 export default function StaffDashboardPage() {
-  const { complaints, loading, error } = useComplaints();
+  const { complaints, loading, error } = useComplaints({ mode: 'staff' });
 
   const typedComplaints = complaints as Complaint[];
 

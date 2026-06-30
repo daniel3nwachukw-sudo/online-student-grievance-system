@@ -1,30 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import StaffGuard from '@/src/components/auth/StaffGuard';
 import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
 import StaffSidebar from '@/src/components/dashboard/StaffSidebar';
 import { db } from '@/src/lib/firebase';
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  updateDoc,
-} from 'firebase/firestore';
-import {
-  MoreHorizontal,
-  ShieldCheck,
-  ShieldOff,
-  Trash2,
-  Users,
-} from 'lucide-react';
+import { collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { MoreHorizontal, ShieldCheck, ShieldOff, Trash2, Users } from 'lucide-react';
 
 type AppUser = {
   id: string;
   fullName?: string;
   email?: string;
-  role?: 'student' | 'staff';
+  role?: 'student' | 'staff' | 'admin';
   matricNumber?: string;
   phoneNumber?: string;
   department?: string;
@@ -37,6 +25,7 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   async function fetchUsers() {
     setLoading(true);
@@ -57,6 +46,17 @@ export default function ManageUsersPage() {
 
   useEffect(() => {
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   async function changeRole(userId: string, role: 'student' | 'staff') {
@@ -143,9 +143,7 @@ export default function ManageUsersPage() {
                   ) : (
                     users.map((user) => (
                       <tr key={user.id} className="border-b border-slate-100 last:border-b-0">
-                        <td className="px-6 py-4 font-medium text-slate-900">
-                          {user.fullName || '-'}
-                        </td>
+                        <td className="px-6 py-4 font-medium text-slate-900">{user.fullName || '-'}</td>
                         <td className="px-6 py-4 text-slate-700">{user.email || '-'}</td>
                         <td className="px-6 py-4 text-slate-700">{user.matricNumber || '-'}</td>
                         <td className="px-6 py-4 text-slate-700">{user.department || '-'}</td>
@@ -161,12 +159,10 @@ export default function ManageUsersPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <div className="relative inline-block text-left">
+                          <div ref={menuRef} className="relative inline-block text-left">
                             <button
                               type="button"
-                              onClick={() =>
-                                setOpenMenuId(openMenuId === user.id ? null : user.id)
-                              }
+                              onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
                               className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
                             >
                               <MoreHorizontal size={18} />
