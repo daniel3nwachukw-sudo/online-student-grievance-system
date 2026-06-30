@@ -29,13 +29,17 @@ type Complaint = {
   reporterName?: string;
   fullName?: string;
   name?: string;
+  createdAt?: {
+    seconds?: number;
+    nanoseconds?: number;
+  } | null;
 };
 
 const quickActions = [
-  { label: 'View All Complaints', icon: ClipboardList },
-  { label: 'Respond to Complaints', icon: FileCheck2 },
-  { label: 'Generate Report', icon: FileBarChart2 },
-  { label: 'Manage Users', icon: Users },
+  { label: 'View All Complaints', icon: ClipboardList, href: '/dashboard/staff/complaints' },
+  { label: 'Respond to Complaints', icon: FileCheck2, href: '/dashboard/staff/responses' },
+  { label: 'Generate Report', icon: FileBarChart2, href: '/dashboard/staff/reports' },
+  { label: 'Manage Users', icon: Users, href: '/dashboard/staff/manage-users' },
 ];
 
 function StatusBadge({ status }: { status?: string }) {
@@ -50,6 +54,18 @@ function StatusBadge({ status }: { status?: string }) {
   }
 
   return <span className="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">Pending</span>;
+}
+
+function formatDate(value?: { seconds?: number; nanoseconds?: number } | null) {
+  if (!value?.seconds) return '-';
+
+  const date = new Date(value.seconds * 1000);
+
+  return date.toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function formatDayLabel(date: Date) {
@@ -68,7 +84,6 @@ function getLast7Days() {
 
 export default function StaffDashboardPage() {
   const { complaints, loading, error } = useComplaints({ mode: 'staff' });
-
   const typedComplaints = complaints as Complaint[];
 
   const total = typedComplaints.length;
@@ -76,17 +91,19 @@ export default function StaffDashboardPage() {
   const resolved = typedComplaints.filter((c) => (c.status || '').toLowerCase() === 'resolved').length;
   const rejected = typedComplaints.filter((c) => (c.status || '').toLowerCase() === 'rejected').length;
 
-  const recentComplaints = [...typedComplaints].slice(0, 5).map((c, index) => ({
-    complainant:
-      c.anonymous || c.isAnonymous
-        ? 'Anonymous'
-        : c.reporterName || c.fullName || c.name || 'Anonymous',
-    category: c.category || '-',
-    subject: c.title || '-',
-    status: c.status || 'Pending',
-    date: c.response || '-',
-    id: c.id || `#${index + 1}`,
-  }));
+  const recentComplaints = [...typedComplaints]
+    .slice(0, 5)
+    .map((c, index) => ({
+      complainant:
+        c.anonymous || c.isAnonymous
+          ? 'Anonymous'
+          : c.reporterName || c.fullName || c.name || 'Anonymous',
+      category: c.category || '-',
+      subject: c.title || '-',
+      status: c.status || 'Pending',
+      date: formatDate(c.createdAt),
+      id: c.id || `#${index + 1}`,
+    }));
 
   const categoryCounts = useMemo(() => {
     return typedComplaints.reduce<Record<string, number>>((acc, c) => {
@@ -103,10 +120,7 @@ export default function StaffDashboardPage() {
       const key = day.toDateString();
 
       const count = typedComplaints.filter((c) => {
-        const created = (c as { createdAt?: { seconds?: number } }).createdAt?.seconds
-          ? new Date((c as { createdAt?: { seconds?: number } }).createdAt!.seconds! * 1000)
-          : null;
-
+        const created = c.createdAt?.seconds ? new Date(c.createdAt.seconds * 1000) : null;
         if (!created) return false;
         return created.toDateString() === key;
       }).length;
@@ -144,7 +158,6 @@ export default function StaffDashboardPage() {
 
     return entries.map(([name, count], index) => {
       const percentage = (count / totalCount) * 100;
-
       return {
         name,
         count,
@@ -348,7 +361,7 @@ export default function StaffDashboardPage() {
                   <th className="py-3 pr-4 font-medium">Category</th>
                   <th className="py-3 pr-4 font-medium">Subject</th>
                   <th className="py-3 pr-4 font-medium">Status</th>
-                  <th className="py-3 pr-4 font-medium">Date</th>
+                  <th className="py-3 pr-4 font-medium">Report Date</th>
                 </tr>
               </thead>
               <tbody>
@@ -378,15 +391,16 @@ export default function StaffDashboardPage() {
             {quickActions.map((action) => {
               const Icon = action.icon;
               return (
-                <button
+                <Link
                   key={action.label}
+                  href={action.href}
                   className="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:shadow-md"
                 >
                   <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
                     <Icon size={22} />
                   </div>
                   <p className="font-semibold text-slate-900">{action.label}</p>
-                </button>
+                </Link>
               );
             })}
           </div>
