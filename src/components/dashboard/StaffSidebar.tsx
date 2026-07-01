@@ -21,8 +21,6 @@ import {
   Settings,
   User,
   Users,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import { auth } from '@/src/lib/firebase';
 
@@ -42,7 +40,6 @@ const navItems = [
 
 export default function StaffSidebar() {
   const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -66,29 +63,26 @@ export default function StaffSidebar() {
     <>
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="fixed left-4 top-4 z-[100] flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-white shadow-lg transition hover:bg-emerald-800 lg:hidden"
-        aria-label={open ? 'Close sidebar' : 'Open sidebar'}
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-[100] flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-white shadow-lg transition hover:bg-emerald-800"
+        aria-label="Open sidebar"
       >
-        {open ? <X size={20} /> : <Menu size={20} />}
+        <Menu size={20} />
       </button>
 
       {open && (
         <button
           type="button"
           onClick={closeSidebar}
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40"
           aria-label="Close sidebar overlay"
         />
       )}
 
       <aside
         className={`
-          fixed left-0 top-0 z-50 flex h-screen flex-col overflow-hidden bg-gradient-to-b from-emerald-950 to-slate-950 text-white transition-all duration-300
+          fixed left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-hidden bg-gradient-to-b from-emerald-950 to-slate-950 text-white shadow-2xl transition-transform duration-300
           ${open ? 'translate-x-0' : '-translate-x-full'}
-          ${collapsed ? 'lg:w-20' : 'lg:w-72'}
-          w-72
-          lg:translate-x-0
         `}
       >
         <div className="shrink-0 border-b border-white/10 px-5 py-6">
@@ -97,28 +91,16 @@ export default function StaffSidebar() {
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
                 <Bell size={20} className="text-emerald-300" />
               </div>
-
-              {!collapsed && (
-                <div>
-                  <h1 className="text-xl font-bold leading-tight">Grievance</h1>
-                  <p className="text-sm text-white/70">System</p>
-                </div>
-              )}
+              <div>
+                <h1 className="text-xl font-bold leading-tight">Grievance</h1>
+                <p className="text-sm text-white/70">System</p>
+              </div>
             </div>
 
             <button
               type="button"
-              onClick={() => setCollapsed((prev) => !prev)}
-              className="hidden rounded-lg p-2 text-white/80 transition hover:bg-white/10 lg:inline-flex"
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-            </button>
-
-            <button
-              type="button"
               onClick={closeSidebar}
-              className="rounded-lg p-2 text-white/80 transition hover:bg-white/10 lg:hidden"
+              className="rounded-lg p-2 text-white/80 transition hover:bg-white/10"
               aria-label="Close sidebar"
             >
               <X size={18} />
@@ -145,9 +127,7 @@ export default function StaffSidebar() {
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <Icon size={18} className="shrink-0" />
-                  {!collapsed && (
-                    <span className="truncate text-sm font-medium">{item.label}</span>
-                  )}
+                  <span className="truncate text-sm font-medium">{item.label}</span>
                 </div>
               </Link>
             );
@@ -159,7 +139,7 @@ export default function StaffSidebar() {
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-white/85 transition hover:bg-white/10"
           >
             <LogOut size={18} />
-            {!collapsed && <span className="text-sm font-medium">Logout</span>}
+            <span className="text-sm font-medium">Logout</span>
           </button>
         </nav>
 
@@ -169,22 +149,17 @@ export default function StaffSidebar() {
               <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white/10">
                 <UserCircle2 size={42} className="text-white/90" />
               </div>
-
-              {!collapsed && (
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">Staff User</p>
-                  <p className="truncate text-sm text-white/70">Administrator</p>
-                </div>
-              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold">Staff User</p>
+                <p className="truncate text-sm text-white/70">Administrator</p>
+              </div>
             </div>
 
-            {!collapsed && (
-              <div className="mt-4">
-                <span className="inline-flex items-center rounded-full bg-emerald-600/30 px-3 py-1 text-xs font-semibold text-emerald-200">
-                  Staff
-                </span>
-              </div>
-            )}
+            <div className="mt-4">
+              <span className="inline-flex items-center rounded-full bg-emerald-600/30 px-3 py-1 text-xs font-semibold text-emerald-200">
+                Staff
+              </span>
+            </div>
           </div>
         </div>
       </aside>
