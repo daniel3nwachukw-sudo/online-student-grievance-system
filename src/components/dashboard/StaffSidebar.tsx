@@ -49,14 +49,13 @@ export default function StaffSidebar() {
   const closeSidebar = () => setOpen(false);
 
   const handleNavClick = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      closeSidebar();
-    }
+    setOpen(false);
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      setOpen(false);
       router.push('/signin');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -78,7 +77,7 @@ export default function StaffSidebar() {
         <button
           type="button"
           onClick={closeSidebar}
-          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           aria-label="Close sidebar overlay"
         />
       )}
@@ -87,7 +86,8 @@ export default function StaffSidebar() {
         className={`
           fixed left-0 top-0 z-50 flex h-screen flex-col overflow-hidden bg-gradient-to-b from-emerald-950 to-slate-950 text-white transition-all duration-300
           ${open ? 'translate-x-0' : '-translate-x-full'}
-          ${collapsed ? 'w-20 lg:w-20' : 'w-72 lg:w-72'}
+          ${collapsed ? 'lg:w-20' : 'lg:w-72'}
+          w-72
           lg:translate-x-0
         `}
       >
