@@ -13,6 +13,44 @@ const MAX_FILES = 5;
 const categories = ['Academic', 'Facilities', 'Safety', 'Staff', 'Examination', 'Other'];
 const semesters = ['First Semester', 'Second Semester'];
 
+const badWords = [
+  'fuck',
+  'shit',
+  'bastard',
+  'asshole',
+  'bitch',
+  'dick',
+  'pussy',
+  'cunt',
+  'prick',
+  'slut',
+  'whore',
+  'fucker',
+  'douche',
+  'dickhead',
+  'damn',
+  'crap',
+  'piss',
+  'motherfucker',
+  'ass',
+  'twat',
+  'bollocks',
+  'wanker',
+  'nigga',
+  'nigger',
+  'arse',
+  'fag',
+  'slut',
+  'whore',
+  'jerkoff',
+  'dumbass',
+];
+
+function hasAbusiveWords(text: string) {
+  const normalized = text.toLowerCase();
+  return badWords.some((word) => normalized.includes(word));
+}
+
 export default function NewComplaintPage() {
   const router = useRouter();
   const { profile } = useUserProfile();
@@ -74,6 +112,12 @@ export default function NewComplaintPage() {
       return;
     }
 
+    if (hasAbusiveWords(title) || hasAbusiveWords(description)) {
+      setSeverity('high');
+      setMessage('Please remove abusive words from your complaint before submitting.');
+      return;
+    }
+
     const department = profile?.department || '';
     const issueLevel = profile?.level || '';
     const studentName =
@@ -106,18 +150,18 @@ export default function NewComplaintPage() {
     setLoading(true);
 
     try {
-    await submitGrievance({
-  title,
-  description,
-  category,
-  department,
-  issueSemester,
-  issueSession: profile?.session || '2025/2026',
-  issueLevel,
-  anonymous: false,
-  reporterId: user.uid,
-  reporterName: studentName,
-});
+      await submitGrievance({
+        title,
+        description,
+        category,
+        department,
+        issueSemester,
+        issueSession: profile?.session || '2025/2026',
+        issueLevel,
+        anonymous: false,
+        reporterId: user.uid,
+        reporterName: studentName,
+      });
 
       router.push('/dashboard/student');
     } catch (error: any) {
