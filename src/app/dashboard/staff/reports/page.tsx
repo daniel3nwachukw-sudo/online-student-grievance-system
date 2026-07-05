@@ -100,8 +100,8 @@ export default function AdminReportsPage() {
                 onClick={() => setStatusFilter(status)}
                 className={`rounded-lg border-2 px-4 py-2 font-medium transition ${
                   active
-                    ? 'border-blue-900 bg-blue-900 text-white'
-                    : 'border-blue-900 bg-white text-blue-900 hover:bg-blue-50'
+                    ? 'border-green-900 bg-green-800 text-white'
+                    : 'border-green-900 bg-white text-green-800 hover:bg-green-50'
                 }`}
               >
                 {status}
@@ -125,27 +125,27 @@ export default function AdminReportsPage() {
                   <div className="mt-2 text-sm text-slate-500">Category: {c.category || '-'}</div>
                   <div className="text-sm text-slate-500">Department: {c.department || '-'}</div>
                   <div className="mt-1 text-sm text-slate-700">
-                    Status: <span className="ml-1 font-semibold text-blue-900">{c.status}</span>
+                    Status: <span className="ml-1 font-semibold text-green-900">{c.status}</span>
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={() => updateStatus(c.id, 'In Progress')}
-                      className="rounded-lg border border-blue-900 bg-blue-900 px-3 py-2 text-white transition hover:bg-blue-800"
+                      className="rounded-lg border border-green-800 bg-green-900 px-3 py-2 text-white transition hover:bg-green-700"
                     >
                       Attend Report
                     </button>
 
                     <button
                       onClick={() => updateStatus(c.id, 'Pending')}
-                      className="rounded-lg border border-blue-900 bg-white px-3 py-2 text-blue-900 transition hover:bg-blue-50"
+                      className="rounded-lg border border-green-900 bg-white px-3 py-2 text-green-900 transition hover:bg-green-50"
                     >
                       Mark Pending
                     </button>
 
                     <button
                       onClick={() => updateStatus(c.id, 'Resolved')}
-                      className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-white transition hover:bg-slate-800"
+                      className="rounded-lg border border-green-900 bg-green-900 px-3 py-2 text-white transition hover:bg-green-800"
                     >
                       Mark Resolved
                     </button>
@@ -155,7 +155,7 @@ export default function AdminReportsPage() {
                 <div className="flex gap-2">
                   <Link
                     href={`/complaint/${c.id}`}
-                    className="rounded-lg border border-blue-900 bg-blue-900 px-3 py-2 text-white transition hover:bg-blue-800"
+                    className="rounded-lg border border-green-800 bg-green-900 px-3 py-2 text-white transition hover:bg-green-700"
                   >
                     View
                   </Link>
