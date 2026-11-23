@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import './globals.css';
-import RegisterSW from '../components/RegisterSW';
+import ServiceWorkerRegister from '../components/ServiceWorkerRegister';
 
 export const metadata = {
   title: 'Online Student Grievance System',
@@ -25,7 +25,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
-        <RegisterSW />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
