@@ -23,7 +23,7 @@ export default function StaffSettingsPage() {
 
           <Link
             href="/dashboard/staff/settings/edit-profile"
-            className="mt-4 inline-flex rounded-lg bg-blue-900 px-5 py-2 text-white transition hover:bg-blue-800"
+            className="mt-4 inline-flex rounded-lg bg-green-700 px-5 py-2 text-white transition hover:bg-blue-800"
           >
             Edit Profile
           </Link>
