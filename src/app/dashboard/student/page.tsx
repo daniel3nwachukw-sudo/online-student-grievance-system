@@ -199,13 +199,13 @@ export default function StudentDashboardPage() {
           Loading your complaints...
         </div>
       ) : (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between rounded-3xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex items-center justify-between rounded-3xl border border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-5 sm:py-4">
             <div>
               <p className="text-sm text-slate-500">Dashboard</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-700 hover:bg-slate-100">
                 <Bell size={20} />
                 <span className="absolute right-0 top-0 h-4 min-w-4 rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white">3</span>
@@ -217,11 +217,11 @@ export default function StudentDashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-gradient-to-r from-indigo-500 to-blue-500 p-6 text-white shadow-sm">
+          <div className="rounded-3xl bg-gradient-to-r from-indigo-500 to-blue-500 p-5 text-white shadow-sm sm:p-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-lg text-white/90">Welcome back,</p>
-                <h2 className="mt-1 text-3xl font-bold">{studentName}</h2>
+                <h2 className="mt-1 break-words text-2xl font-bold sm:text-3xl">{studentName}</h2>
                 <p className="mt-3 text-white/90">We are here to listen and help.</p>
               </div>
 
@@ -241,7 +241,7 @@ export default function StudentDashboardPage() {
 
           <div>
             <h3 className="mb-4 text-lg font-bold text-slate-900">Overview</h3>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
               {[
                 { label: 'Total Complaints', value: total, icon: FileText, bg: 'bg-blue-50', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', link: '/complaint' },
                 { label: 'Pending', value: pending, icon: Clock3, bg: 'bg-amber-50', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', link: '/complaint' },
@@ -250,15 +250,15 @@ export default function StudentDashboardPage() {
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.label} className={`rounded-2xl border border-slate-100 p-5 shadow-sm ${item.bg}`}>
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${item.iconBg}`}>
+                  <div key={item.label} className={`rounded-2xl border border-slate-100 p-3 shadow-sm sm:p-5 ${item.bg}`}>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-2xl sm:h-12 sm:w-12 ${item.iconBg}`}>
                       <Icon className={item.iconColor} size={22} />
                     </div>
-                    <div className="mt-5">
-                      <p className="text-3xl font-bold text-slate-900">{item.value}</p>
-                      <p className="mt-1 text-sm text-slate-600">{item.label}</p>
+                    <div className="mt-3 sm:mt-5">
+                      <p className="text-2xl font-bold text-slate-900 sm:text-3xl">{item.value}</p>
+                      <p className="mt-1 text-xs text-slate-600 sm:text-sm">{item.label}</p>
                     </div>
-                    <Link href={item.link} className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-slate-900">
+                    <Link href={item.link} className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900 sm:mt-4 sm:text-sm">
                       View all
                       <ChevronRight size={16} />
                     </Link>
@@ -269,8 +269,8 @@ export default function StudentDashboardPage() {
           </div>
 
           <div className="rounded-3xl border border-slate-100 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <h3 className="text-lg font-bold text-slate-900">Recent Complaints</h3>
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5">
+              <h3 className="text-base font-bold text-slate-900 sm:text-lg">Recent Complaints</h3>
               <Link href="/complaint" className="text-sm font-medium text-blue-700 hover:underline">
                 View all
               </Link>
@@ -281,8 +281,8 @@ export default function StudentDashboardPage() {
                 <div className="p-5 text-slate-500">No complaints submitted yet.</div>
               ) : (
                 recentComplaints.map((c) => (
-                  <div key={c.id} className="flex items-center gap-4 p-5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                  <div key={c.id} className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-x-3 gap-y-2 p-4 sm:flex sm:gap-4 sm:p-5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 sm:h-12 sm:w-12">
                       <ClipboardList size={22} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -290,8 +290,10 @@ export default function StudentDashboardPage() {
                       <p className="mt-1 truncate text-sm text-slate-500">{c.category || 'General'}</p>
                       <p className="mt-1 text-sm text-slate-500">Submitted: {formatDateTime(c.createdAt)}</p>
                     </div>
-                    <StatusBadge status={c.status} />
-                    <Link href={`/complaint/${c.id}`} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700">
+                    <div className="col-start-2 row-start-2 sm:col-auto sm:row-auto">
+                      <StatusBadge status={c.status} />
+                    </div>
+                    <Link href={`/complaint/${c.id}`} className="col-start-3 row-start-2 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 sm:col-auto sm:row-auto">
                       <ArrowRight size={18} />
                     </Link>
                   </div>
@@ -302,33 +304,33 @@ export default function StudentDashboardPage() {
 
           <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900">Quick Actions</h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <Link href="/dashboard/student/new" className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+              <Link href="/dashboard/student/new" className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center transition hover:-translate-y-0.5 hover:shadow-md sm:p-5">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 sm:h-14 sm:w-14">
                   <PenTool size={24} />
                 </div>
-                <p className="mt-4 font-semibold text-slate-900">Submit Complaint</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900 sm:mt-4">Submit Complaint</p>
               </Link>
 
-              <Link href="/dashboard/student/new?anonymous=1" className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+              <Link href="/dashboard/student/new?anonymous=1" className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center transition hover:-translate-y-0.5 hover:shadow-md sm:p-5">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 sm:h-14 sm:w-14">
                   <UserCircle2 size={24} />
                 </div>
-                <p className="mt-4 font-semibold text-slate-900">Anonymous Complaint</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900 sm:mt-4">Anonymous Complaint</p>
               </Link>
 
-              <Link href="/complaint" className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-green-600">
+              <Link href="/complaint" className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center transition hover:-translate-y-0.5 hover:shadow-md sm:p-5">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-green-100 text-green-600 sm:h-14 sm:w-14">
                   <Search size={24} />
                 </div>
-                <p className="mt-4 font-semibold text-slate-900">Track Complaint</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900 sm:mt-4">Track Complaint</p>
               </Link>
 
-              <Link href="/responses" className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+              <Link href="/responses" className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center transition hover:-translate-y-0.5 hover:shadow-md sm:p-5">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 sm:h-14 sm:w-14">
                   <BadgeInfo size={24} />
                 </div>
-                <p className="mt-4 font-semibold text-slate-900">View Responses</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900 sm:mt-4">View Responses</p>
               </Link>
             </div>
           </div>

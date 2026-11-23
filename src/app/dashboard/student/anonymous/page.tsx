@@ -7,6 +7,8 @@ import { auth } from '@/src/lib/firebase';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { checkModeration } from '@/src/lib/moderation';
 import { submitGrievance } from '@/src/lib/firebase';
+import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
+import StudentSidebar from '@/src/components/dashboard/StudentSidebar';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_FILES = 5;
@@ -128,31 +130,31 @@ export default function AnonymousComplaintPage() {
   }
 
   return (
-    <main className="container">
-      <section className="rounded-3xl bg-white p-10 shadow-lg">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="page-heading">Submit Anonymous Complaint</h1>
-            <p className="text-slate-600">
+    <DashboardLayout sidebar={<StudentSidebar />}>
+      <section className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-4 shadow-lg sm:rounded-3xl sm:p-6 lg:p-10">
+        <div className="mb-5 flex flex-col items-start gap-3 sm:mb-6 sm:flex-row sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="mb-2 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">Submit Anonymous Complaint</h1>
+            <p className="text-sm leading-6 text-slate-600 sm:text-base">
               Your identity will be hidden, but your profile details will still be used internally.
             </p>
           </div>
 
-          <span className="rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700">
+          <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700 sm:px-4 sm:py-2 sm:text-sm">
             Anonymous Mode
           </span>
         </div>
 
-        <div className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 md:grid-cols-2">
+        <div className="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:mb-6 sm:grid-cols-2 sm:gap-4 sm:rounded-3xl sm:p-5">
           <div>
             <p className="text-sm text-slate-500">Student Name</p>
-            <p className="font-medium text-slate-900">
+            <p className="break-words font-medium text-slate-900">
               {profile?.fullName || profile?.name || user?.displayName || user?.email || 'Loading...'}
             </p>
           </div>
           <div>
             <p className="text-sm text-slate-500">Department</p>
-            <p className="font-medium text-slate-900">{profile?.department || 'Not set'}</p>
+            <p className="break-words font-medium text-slate-900">{profile?.department || 'Not set'}</p>
           </div>
           <div>
             <p className="text-sm text-slate-500">Level</p>
@@ -164,14 +166,14 @@ export default function AnonymousComplaintPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid gap-6 rounded-3xl border border-slate-200 bg-slate-50 p-8">
-          <div className="grid gap-6 md:grid-cols-2">
+        <form onSubmit={handleSubmit} className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:gap-6 sm:rounded-3xl sm:p-6 lg:p-8">
+          <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2">
               <span className="font-medium">Complaint Category</span>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="rounded-2xl border border-slate-300 p-4"
+                className="w-full min-w-0 rounded-2xl border border-slate-300 p-3 sm:p-4"
               >
                 {categories.map((item) => (
                   <option key={item} value={item}>
@@ -186,7 +188,7 @@ export default function AnonymousComplaintPage() {
               <select
                 value={issueSemester}
                 onChange={(e) => setIssueSemester(e.target.value)}
-                className="rounded-2xl border border-slate-300 p-4"
+                className="w-full min-w-0 rounded-2xl border border-slate-300 p-3 sm:p-4"
               >
                 {semesters.map((semester) => (
                   <option key={semester} value={semester}>
@@ -203,7 +205,7 @@ export default function AnonymousComplaintPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="rounded-2xl border border-slate-300 p-4"
+              className="w-full min-w-0 rounded-2xl border border-slate-300 p-3 sm:p-4"
             />
           </label>
 
@@ -214,41 +216,41 @@ export default function AnonymousComplaintPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
               required
-              className="rounded-2xl border border-slate-300 p-4"
+              className="w-full min-w-0 rounded-2xl border border-slate-300 p-3 sm:p-4"
             />
           </label>
 
           <label className="grid gap-2">
             <span className="font-medium">Attachments</span>
-            <input type="file" multiple onChange={handleFileChange} />
-            <small className="text-slate-500">
+            <input className="block w-full min-w-0 text-sm" type="file" multiple onChange={handleFileChange} />
+            <small className="text-sm text-slate-500">
               Max {MAX_FILES} files, {MAX_FILE_SIZE / (1024 * 1024)} MB each.
             </small>
           </label>
 
           {message && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+            <div className="break-words rounded-md bg-red-50 p-3 text-sm text-red-700">
               {message}
             </div>
           )}
 
           {severity && (
-            <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
+            <div className="break-words rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
               Detected severity: {severity}
             </div>
           )}
 
-          <div className="flex items-center justify-end">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
               type="submit"
               disabled={loading}
-              className="rounded-full bg-brand-700 px-6 py-3 text-white hover:bg-brand-800 disabled:opacity-60"
+              className="w-full rounded-full bg-brand-700 px-6 py-3 text-white hover:bg-brand-800 disabled:opacity-60 sm:w-auto"
             >
               {loading ? 'Submitting...' : 'Submit Complaint'}
             </button>
           </div>
         </form>
       </section>
-    </main>
+    </DashboardLayout>
   );
 }

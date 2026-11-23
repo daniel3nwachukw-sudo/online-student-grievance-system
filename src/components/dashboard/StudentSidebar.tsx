@@ -71,7 +71,7 @@ export default function StudentSidebar() {
     <>
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-50 rounded-full bg-[#07162f] p-3 text-white shadow-lg lg:hidden"
+        className="fixed left-3 top-3 z-50 rounded-full bg-[#07162f] p-3 text-white shadow-lg lg:hidden"
         aria-label="Open sidebar"
       >
         <Menu size={18} />
@@ -85,7 +85,7 @@ export default function StudentSidebar() {
       ) : null}
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen flex-col bg-[#07162f] text-white shadow-xl transition-all duration-300 lg:static lg:z-auto ${
+        className={`fixed left-0 top-0 z-50 flex h-screen max-w-[85vw] flex-col bg-[#07162f] text-white shadow-xl transition-all duration-300 lg:static lg:z-auto ${
           mobileOpen ? 'translate-x-0 w-72' : '-translate-x-full w-72'
         } lg:translate-x-0 ${collapsed ? 'lg:w-20' : 'lg:w-72'}`}
       >
