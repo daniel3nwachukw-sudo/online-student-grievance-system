@@ -6,30 +6,84 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth.token.role == 'admin';
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isStaff() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['staff', 'admin'];
     }
 
     match /users/{userId} {
-      allow read, update: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow delete: if isAdmin();
+      allow read: if isStaff() || (isSignedIn() && request.auth.uid == userId);
+      allow create: if isSignedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.role == 'student';
+      allow update: if (
+        isSignedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.role == resource.data.role
+      ) || (
+        isStaff() &&
+        userId != request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']) &&
+        request.resource.data.role in ['student', 'staff']
+      );
+      allow delete: if false;
+
+      match /fcmTokens/{tokenId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /complaints/{complaintId} {
+      allow read: if isStaff() ||
+        (isSignedIn() && resource.data.reporterId == request.auth.uid);
+      allow create: if isSignedIn() &&
+        request.resource.data.anonymous is bool &&
+        (
+          (
+            request.resource.data.anonymous == true &&
+            request.resource.data.reporterId == null &&
+            request.resource.data.reporterName == null
+          ) ||
+          (
+            request.resource.data.anonymous == false &&
+            request.resource.data.reporterId == request.auth.uid
+          )
+        );
+      allow update, delete: if isStaff();
+    }
+
+    match /departments/{departmentId} {
+      allow read: if isStaff();
+      allow write: if false;
     }
 
     match /grievances/{grievanceId} {
-      allow read: if isSignedIn();
+      allow read: if isStaff() ||
+        (isSignedIn() && resource.data.reporterId == request.auth.uid);
       allow create: if isSignedIn();
-      allow update: if isAdmin() || (request.auth.uid == resource.data.reporterId);
-      allow delete: if isAdmin();
+      allow update: if isStaff() || (request.auth.uid == resource.data.reporterId);
+      allow delete: if isStaff();
     }
 
     match /responses/{responseId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read: if isStaff();
+      allow write: if isStaff();
     }
 
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow create: if isAdmin() || request.auth.uid == request.resource.data.userId;
+      allow create: if isStaff() ||
+        (isSignedIn() && request.auth.uid == request.resource.data.userId);
+      allow update: if isSignedIn() &&
+        request.auth.uid == resource.data.userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
 
     match /categories/{categoryId} {

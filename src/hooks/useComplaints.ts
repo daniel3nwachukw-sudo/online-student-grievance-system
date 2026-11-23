@@ -25,7 +25,12 @@ export type Complaint = {
     nanoseconds?: number;
   } | null;
   studentId?: string;
+  reporterId?: string;
+  reporterName?: string;
+  fullName?: string;
+  name?: string;
   anonymous?: boolean;
+  isAnonymous?: boolean;
   department?: string;
 };
 
@@ -133,7 +138,12 @@ export function useComplaints(options: UseComplaintsOptions = {}): UseComplaints
                 status: data.status || 'Pending',
                 createdAt: data.createdAt || null,
                 studentId: data.studentId || '',
-                anonymous: Boolean(data.anonymous),
+                reporterId: data.reporterId || data.studentId || '',
+                reporterName: data.reporterName || '',
+                fullName: data.fullName || '',
+                name: data.name || '',
+                anonymous: Boolean(data.anonymous ?? data.isAnonymous),
+                isAnonymous: Boolean(data.isAnonymous),
                 department: data.department || '',
               };
             });

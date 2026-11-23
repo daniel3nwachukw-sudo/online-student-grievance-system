@@ -5,7 +5,9 @@ import StaffGuard from '@/src/components/auth/StaffGuard';
 import DashboardLayout from '@/src/components/dashboard/DashboardLayout';
 import StaffSidebar from '@/src/components/dashboard/StaffSidebar';
 import { db } from '@/src/lib/firebase';
-import { collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { functions } from '@/src/lib/firebase';
+import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { MoreHorizontal, ShieldCheck, ShieldOff, Trash2, Users } from 'lucide-react';
 
 type AppUser = {
@@ -72,16 +74,19 @@ export default function ManageUsersPage() {
   }
 
   async function removeUser(userId: string) {
-    const confirmed = window.confirm('Delete this user?');
+    const confirmed = window.confirm(
+      'Delete this account and profile? Past complaints will be kept but identifying details will be removed.'
+    );
     if (!confirmed) return;
 
     try {
-      await deleteDoc(doc(db, 'users', userId));
-      setMessage('User deleted successfully.');
+      const deleteManagedUser = httpsCallable(functions, 'deleteManagedUser');
+      await deleteManagedUser({ userId });
+      setMessage('User account deleted; past complaints were anonymized.');
       setOpenMenuId(null);
       await fetchUsers();
     } catch (error) {
-      setMessage('Unable to delete user.');
+      setMessage(error instanceof Error ? error.message : 'Unable to delete user.');
       console.error(error);
     }
   }
@@ -170,32 +175,44 @@ export default function ManageUsersPage() {
 
                             {openMenuId === user.id && (
                               <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                                <button
-                                  type="button"
-                                  onClick={() => changeRole(user.id, 'staff')}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-emerald-50"
-                                >
-                                  <ShieldCheck size={16} className="text-emerald-700" />
-                                  Make Staff
-                                </button>
+                                {user.role !== 'admin' ? (
+                                  <>
+                                    {user.role !== 'staff' ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => changeRole(user.id, 'staff')}
+                                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-emerald-50"
+                                      >
+                                        <ShieldCheck size={16} className="text-emerald-700" />
+                                        Make Staff
+                                      </button>
+                                    ) : null}
 
-                                <button
-                                  type="button"
-                                  onClick={() => changeRole(user.id, 'student')}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-emerald-50"
-                                >
-                                  <ShieldOff size={16} className="text-slate-600" />
-                                  Make Student
-                                </button>
+                                    {user.role !== 'student' ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => changeRole(user.id, 'student')}
+                                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-emerald-50"
+                                      >
+                                        <ShieldOff size={16} className="text-slate-600" />
+                                        Make Student
+                                      </button>
+                                    ) : null}
 
-                                <button
-                                  type="button"
-                                  onClick={() => removeUser(user.id)}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 size={16} />
-                                  Delete User
-                                </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeUser(user.id)}
+                                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 size={16} />
+                                      Delete User
+                                    </button>
+                                  </>
+                                ) : (
+                                  <p className="px-4 py-3 text-sm text-slate-500">
+                                    Admin accounts cannot be changed here.
+                                  </p>
+                                )}
                               </div>
                             )}
                           </div>

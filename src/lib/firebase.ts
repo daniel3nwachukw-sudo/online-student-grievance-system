@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFunctions } from 'firebase/functions';
 import {
   getFirestore,
   addDoc,
@@ -17,11 +18,12 @@ const firebaseConfig = {
   appId: '1:729102163263:web:1094cd8a0d7f640f7e878a',
 };
 
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export const functions = getFunctions(app, 'us-central1');
 
 export type SubmitGrievanceInput = {
   title: string;

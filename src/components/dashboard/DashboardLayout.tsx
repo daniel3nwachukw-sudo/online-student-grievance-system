@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import PushNotificationSetup from './PushNotificationSetup';
 
 type DashboardLayoutProps = {
   title?: string;
@@ -16,11 +17,12 @@ export default function DashboardLayout({
       <div className="shrink-0">{sidebar}</div>
 
       <main className="min-w-0 flex-1 overflow-y-auto px-4 pb-6 pt-20 sm:px-6 sm:pt-20 lg:p-6">
-        {title ? (
-          <div className="mb-4 lg:mb-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 lg:mb-6">
+          {title ? (
             <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">{title}</h1>
-          </div>
-        ) : null}
+          ) : <span />}
+          <PushNotificationSetup />
+        </div>
 
         {children}
       </main>

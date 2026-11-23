@@ -11,7 +11,7 @@
     "emulate": "firebase emulators:start",
     "emulate:export": "firebase emulators:export ./emulator-export",
     "emulate:import": "firebase emulators:start --import=./emulator-export",
-    "deploy": "npm run build && firebase deploy --only hosting"
+    "deploy": "npm run build && firebase deploy --only hosting,functions,firestore:rules"
   },
   "dependencies": {
     "autoprefixer": "^10.4.19",

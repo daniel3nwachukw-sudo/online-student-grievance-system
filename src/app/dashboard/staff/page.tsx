@@ -39,7 +39,7 @@ const quickActions = [
   { label: 'View All Complaints', icon: ClipboardList, href: '/dashboard/staff/complaints' },
   { label: 'Respond to Complaints', icon: FileCheck2, href: '/dashboard/staff/responses' },
   { label: 'Generate Report', icon: FileBarChart2, href: '/dashboard/staff/reports' },
-  { label: 'Manage Users', icon: Users, href: '/dashboard/staff/manage-users' },
+  { label: 'Manage Users', icon: Users, href: '/dashboard/staff/users' },
 ];
 
 function StatusBadge({ status }: { status?: string }) {
@@ -97,7 +97,7 @@ export default function StaffDashboardPage() {
       complainant:
         c.anonymous || c.isAnonymous
           ? 'Anonymous'
-          : c.reporterName || c.fullName || c.name || 'Anonymous',
+          : c.reporterName || c.fullName || c.name || 'Unknown student',
       category: c.category || '-',
       subject: c.title || '-',
       status: c.status || 'Pending',
