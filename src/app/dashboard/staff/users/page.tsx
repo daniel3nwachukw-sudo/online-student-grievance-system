@@ -27,7 +27,7 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuRefs = useRef(new Map<string, HTMLDivElement>());
 
   async function fetchUsers() {
     setLoading(true);
@@ -52,7 +52,10 @@ export default function ManageUsersPage() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const clickedInsideMenu = Array.from(menuRefs.current.values()).some((element) =>
+        element.contains(event.target as Node)
+      );
+      if (!clickedInsideMenu) {
         setOpenMenuId(null);
       }
     }
@@ -164,7 +167,13 @@ export default function ManageUsersPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <div ref={menuRef} className="relative inline-block text-left">
+                          <div
+                            ref={(element) => {
+                              if (element) menuRefs.current.set(user.id, element);
+                              else menuRefs.current.delete(user.id);
+                            }}
+                            className="relative inline-block text-left"
+                          >
                             <button
                               type="button"
                               onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}

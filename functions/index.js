@@ -1,9 +1,6 @@
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const {
-  onDocumentCreated,
-  onDocumentUpdated,
-} = require('firebase-functions/v2/firestore');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { FieldValue, getFirestore } = require('firebase-admin/firestore');
@@ -148,15 +145,6 @@ async function notifyStaff(title, body, url) {
   await sendToTokenSnapshots(tokenSnapshots, title, body, url);
 }
 
-async function notifyUser(userId, title, body, url) {
-  const tokensSnapshot = await db
-    .collection('users')
-    .doc(userId)
-    .collection('fcmTokens')
-    .get();
-  await sendToTokenSnapshots([tokensSnapshot], title, body, url);
-}
-
 exports.notifyStaffOnNewComplaint = onDocumentCreated(
   'complaints/{complaintId}',
   async (event) => {
@@ -171,33 +159,6 @@ exports.notifyStaffOnNewComplaint = onDocumentCreated(
       );
     } catch (error) {
       console.error('Failed to notify staff about a new complaint:', error);
-      throw error;
-    }
-  }
-);
-
-exports.notifyReporterOnComplaintUpdate = onDocumentUpdated(
-  'complaints/{complaintId}',
-  async (event) => {
-    const before = event.data.before.data();
-    const after = event.data.after.data();
-    const statusChanged = before.status !== after.status;
-    const responseChanged = before.response !== after.response;
-    const reporterId = after.reporterId || after.studentId;
-
-    if ((!statusChanged && !responseChanged) || !reporterId) return;
-
-    try {
-      await notifyUser(
-        reporterId,
-        'Your complaint has been updated',
-        responseChanged
-          ? 'Staff have posted a response to your complaint.'
-          : `Your complaint status is now ${after.status || 'updated'}.`,
-        `/dashboard/student/complaints/${event.params.complaintId}`
-      );
-    } catch (error) {
-      console.error('Failed to notify complaint reporter:', error);
       throw error;
     }
   }

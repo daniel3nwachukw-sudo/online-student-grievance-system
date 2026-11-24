@@ -14,11 +14,11 @@ A responsive Next.js + TypeScript web application for student complaint reportin
    npm run dev
    ```
 
-3. Add Firebase configuration in `src/lib/firebase.ts` and update `.env.local`.
+3. Configure `NEXT_PUBLIC_FIREBASE_VAPID_KEY` in `.env.local` using the public Web Push certificate from Firebase Console.
 
-4. Deploy to Firebase Hosting:
+4. Deploy Hosting, Firestore rules, and Cloud Functions:
    ```bash
-   firebase deploy
+   npm run deploy
    ```
 
 ## Architecture
@@ -26,8 +26,11 @@ A responsive Next.js + TypeScript web application for student complaint reportin
 - `src/app/` — Next.js routes and pages
 - `src/components/` — reusable UI components
 - `src/lib/` — Firebase helpers, validation, and type definitions
-- `firebase.json` — Firebase Hosting and rewrites
+- `functions/` — secure user deletion and complaint push notifications
+- `firebase.json` — Firebase Hosting, Firestore rules, and Cloud Functions
 - `firestore.rules` — Firestore security rules
+
+Cloud Functions deployment requires the Firebase Blaze plan. Phone push notifications also require HTTPS and user permission; on iOS, the site must be added to the Home Screen.
 
 ## Next Steps
 
@@ -40,7 +43,7 @@ A responsive Next.js + TypeScript web application for student complaint reportin
 
 To avoid unintended billing and to develop safely:
 
-- Use the Firebase Spark (free) plan — do NOT attach a billing account unless you need paid features.
+- Use the Firebase Spark plan for local development. Cloud Functions deployment requires Blaze; do not deploy backend functions unless billing is enabled for the Firebase project.
 - Avoid Phone/SMS auth (it requires billing). Use Email/Password or OAuth providers.
 - Use the Firebase Local Emulator Suite for Auth, Firestore, and Storage to develop and test locally.
 
